@@ -6,158 +6,210 @@
 <title>VRI™ System Interface</title>
 
 <style>
-  * {
-    box-sizing: border-box;
-  }
+* { box-sizing: border-box; }
 
-  body {
-    margin: 0;
-    background: #020818;
-    color: white;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
-  }
+body {
+  margin: 0;
+  background: #020818;
+  color: white;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
 
-  .screen {
-    width: 100vw;
-    height: 100vh;
-    position: relative;
-    background:
-      radial-gradient(circle at center, rgba(0, 200, 255, 0.12), transparent 35%),
-      linear-gradient(135deg, #020818, #040d2a, #020c1e);
-  }
+.screen {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background:
+    radial-gradient(circle at center, rgba(0, 200, 255, 0.12), transparent 35%),
+    linear-gradient(135deg, #020818, #040d2a, #020c1e);
+}
 
+.left-panel {
+  position: absolute;
+  top: 90px;
+  left: 55px;
+  z-index: 10;
+  width: 300px;
+}
+
+.lookup-panel {
+  position: absolute;
+  top: 90px;
+  right: 55px;
+  z-index: 10;
+  width: 300px;
+  padding: 16px;
+  background: rgba(2, 8, 24, 0.78);
+  border: 1px solid rgba(30, 143, 255, 0.55);
+  border-radius: 12px;
+  box-shadow: 0 0 18px rgba(0, 140, 255, 0.25);
+  backdrop-filter: blur(8px);
+}
+
+.brand {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.brand span { color: #00c8ff; }
+
+.title {
+  margin-top: 70px;
+  font-size: 28px;
+  letter-spacing: 5px;
+  line-height: 1.5;
+}
+
+.blue { color: #1e8fff; }
+
+.subtitle {
+  margin-top: 35px;
+  color: #c9d8ff;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.run-btn {
+  margin-top: 30px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid #1e8fff;
+  background: rgba(0, 80, 255, 0.18);
+  color: white;
+  letter-spacing: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 0 18px rgba(0, 140, 255, 0.45);
+}
+
+.run-btn:hover {
+  background: rgba(0, 120, 255, 0.35);
+}
+
+.proof-box {
+  margin-top: 22px;
+  padding: 12px;
+  font-family: "Courier New", monospace;
+  color: #00ff99;
+  display: none;
+  background: rgba(0, 20, 50, 0.55);
+  border: 1px solid rgba(0, 255, 153, 0.35);
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+.lookup-title {
+  color: #c9d8ff;
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.lookup-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #1e8fff;
+  background: #06142d;
+  color: white;
+  outline: none;
+}
+
+.lookup-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #1e8fff;
+  background: rgba(0, 80, 255, 0.18);
+  color: white;
+  letter-spacing: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.lookup-result {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(0, 20, 50, 0.55);
+  border: 1px solid rgba(30, 143, 255, 0.45);
+  border-radius: 8px;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  color: #00ff99;
+  line-height: 1.45;
+  min-height: 42px;
+  max-height: 135px;
+  overflow-y: auto;
+}
+
+svg {
+  width: 100vw;
+  height: 100vh;
+}
+
+.node {
+  cursor: pointer;
+}
+
+.node:hover circle {
+  stroke: #00ff99;
+}
+
+.packet {
+  filter: url(#glow);
+}
+
+.pulse-ring {
+  animation: pulse 3s infinite ease-in-out;
+  transform-origin: center;
+}
+
+.rotate-ring {
+  animation: rotateCore 22s linear infinite;
+  transform-origin: 600px 424px;
+}
+
+.glow-pulse {
+  animation: glowPulse 2.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.04); }
+}
+
+@keyframes rotateCore {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@media (max-width: 900px) {
   .left-panel {
-    position: absolute;
-    top: 90px;
-    left: 55px;
-    z-index: 10;
-    width: 300px;
+    left: 25px;
+    top: 55px;
+    width: 260px;
   }
 
-  .brand {
-    font-size: 42px;
-    font-weight: 800;
-    letter-spacing: 1px;
-  }
-
-  .brand span {
-    color: #00c8ff;
+  .lookup-panel {
+    right: 25px;
+    top: 55px;
+    width: 260px;
   }
 
   .title {
-    margin-top: 70px;
-    font-size: 28px;
-    letter-spacing: 5px;
-    line-height: 1.5;
+    font-size: 22px;
   }
-
-  .blue {
-    color: #1e8fff;
-  }
-
-  .subtitle {
-    margin-top: 35px;
-    color: #c9d8ff;
-    font-size: 20px;
-    line-height: 1.5;
-  }
-
-  .run-btn {
-    margin-top: 35px;
-    padding: 17px 30px;
-    border: 1px solid #1e8fff;
-    background: rgba(0, 80, 255, 0.18);
-    color: white;
-    letter-spacing: 3px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    box-shadow: 0 0 18px rgba(0, 140, 255, 0.45);
-  }
-
-  .run-btn:hover {
-    background: rgba(0, 120, 255, 0.35);
-  }
-
-  .proof-box {
-    margin-top: 25px;
-    font-family: "Courier New", monospace;
-    color: #00ff99;
-    display: none;
-  }
-
-  svg {
-    width: 100vw;
-    height: 100vh;
-  }
-
-  .node {
-    cursor: pointer;
-    transition: transform 0.3s ease;
-  }
-
-  .node:hover circle {
-    stroke: #00ff99;
-  }
-
-  .packet {
-    filter: url(#glow);
-  }
-
-  .pulse-ring {
-    animation: pulse 3s infinite ease-in-out;
-    transform-origin: center;
-  }
-
-  .rotate-ring {
-    animation: rotateCore 22s linear infinite;
-    transform-origin: 600px 424px;
-  }
-
-  .glow-pulse {
-    animation: glowPulse 2.5s infinite ease-in-out;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 0.25; transform: scale(1); }
-    50% { opacity: 0.9; transform: scale(1.04); }
-  }
-
-  @keyframes rotateCore {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  @keyframes glowPulse {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
-  }
-
-  .corner {
-    position: absolute;
-    right: 55px;
-    top: 45px;
-    color: #2d7fd9;
-    font-size: 34px;
-    opacity: 0.8;
-  }
- .lookup-result {
-  margin-top: 15px;
-  padding: 14px;
-  background: rgba(0, 20, 50, 0.6);
-  border: 1px solid #1e8fff;
-  border-radius: 8px;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  color: #00ff99;
-  line-height: 1.5;
-  max-height: 140px;
-  overflow-y: auto;
-  box-shadow: 0 0 10px rgba(0, 200, 255, 0.2);
 }
 </style>
-
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -170,7 +222,6 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY
 );
 </script>
-
 </head>
 
 <body>
@@ -199,26 +250,21 @@ const supabaseClient = window.supabase.createClient(
     </div>
   </div>
 
- <div class="proof-box" style="display:block; margin-top:35px;">
-  <div style="color:#c9d8ff; margin-bottom:10px;">Verify Proof Record</div>
+  <div class="lookup-panel">
+    <div class="lookup-title">VERIFY PROOF RECORD</div>
 
-  <input 
-    id="lookupProofId"
-    placeholder="Enter Proof ID"
-    style="width:100%; padding:12px; border-radius:6px; border:1px solid #1e8fff; background:#06142d; color:white;"
-  />
+    <input
+      id="lookupProofId"
+      class="lookup-input"
+      placeholder="Enter Proof ID"
+    />
 
-  <button 
-    class="run-btn" 
-    style="width:100%; margin-top:12px; padding:13px;"
-    onclick="verifyProofRecord()"
-  >
-    VERIFY PROOF ID
-  </button>
-<div id="lookupResult" class="lookup-result"></div>
-</div>
+    <button class="lookup-btn" onclick="verifyProofRecord()">VERIFY PROOF ID</button>
 
-  <div class="corner">⌜ ⌝</div>
+    <div id="lookupResult" class="lookup-result">
+      Ready to verify proof.
+    </div>
+  </div>
 
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
     <defs>
@@ -264,7 +310,6 @@ const supabaseClient = window.supabase.createClient(
 
     <rect width="1200" height="800" fill="url(#grid)" opacity="0.45" />
 
-    <!-- connector lines -->
     <line x1="190" y1="200" x2="550" y2="397" stroke="#1e6fd9" stroke-width="1.5" opacity="0.65" />
     <line x1="160" y1="424" x2="550" y2="424" stroke="#1e6fd9" stroke-width="1.5" opacity="0.65" />
     <line x1="190" y1="650" x2="550" y2="451" stroke="#1e6fd9" stroke-width="1.5" opacity="0.65" />
@@ -274,7 +319,6 @@ const supabaseClient = window.supabase.createClient(
     <line x1="600" y1="100" x2="600" y2="370" stroke="#1e6fd9" stroke-width="1.5" opacity="0.65" />
     <line x1="600" y1="748" x2="600" y2="478" stroke="#1e6fd9" stroke-width="1.5" opacity="0.65" />
 
-    <!-- paths for moving packets -->
     <path id="path-lt" d="M190,200 L550,397" fill="none" />
     <path id="path-lm" d="M160,424 L550,424" fill="none" />
     <path id="path-lb" d="M190,650 L550,451" fill="none" />
@@ -284,7 +328,6 @@ const supabaseClient = window.supabase.createClient(
     <path id="path-top" d="M600,100 L600,370" fill="none" />
     <path id="path-bot" d="M600,748 L600,478" fill="none" />
 
-    <!-- moving dots -->
     <circle class="packet" r="4" fill="#00c8ff"><animateMotion dur="2.8s" repeatCount="indefinite"><mpath href="#path-lt"/></animateMotion></circle>
     <circle class="packet" r="4" fill="#00c8ff"><animateMotion dur="3.2s" repeatCount="indefinite"><mpath href="#path-lm"/></animateMotion></circle>
     <circle class="packet" r="4" fill="#00c8ff"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath href="#path-lb"/></animateMotion></circle>
@@ -294,7 +337,6 @@ const supabaseClient = window.supabase.createClient(
     <circle class="packet" r="4" fill="#00ff99"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#path-top"/></animateMotion></circle>
     <circle class="packet" r="4" fill="#00ff99"><animateMotion dur="2.7s" repeatCount="indefinite"><mpath href="#path-bot"/></animateMotion></circle>
 
-    <!-- core -->
     <polygon class="rotate-ring" points="600,340 668,379 668,457 600,496 532,457 532,379"
       fill="none" stroke="#1e6fd9" stroke-width="1" opacity="0.6" />
 
@@ -312,7 +354,6 @@ const supabaseClient = window.supabase.createClient(
 
     <text x="600" y="535" text-anchor="middle" fill="#ffffff" font-size="32" font-family="Arial" font-weight="800">VRI™</text>
 
-    <!-- nodes -->
     <g class="node" onclick="nodeClick('Enterprise')" transform="translate(600,100)">
       <circle r="42" fill="#05143a" stroke="#1e6fd9" stroke-width="1.5" filter="url(#nodeGlow)" />
       <text y="8" text-anchor="middle" fill="#4da6ff" font-size="30">▣</text>
@@ -355,7 +396,6 @@ const supabaseClient = window.supabase.createClient(
       <text y="66" text-anchor="middle" fill="#b7d7ff" font-size="13" letter-spacing="3">SECURITY</text>
     </g>
 
-    <!-- badges -->
     <g id="verifiedBadge" transform="translate(660,365)" filter="url(#glow)">
       <rect width="82" height="22" rx="11" fill="#003d1a" stroke="#00cc66" />
       <text x="15" y="15" fill="#00cc66" font-size="10" font-family="Courier New">✓ VERIFIED</text>
@@ -369,31 +409,42 @@ const supabaseClient = window.supabase.createClient(
 </div>
 
 <script>
-async function runVerification() {
+async function createProofRecord(industryName) {
   const proofId = "VRI-2026-" + Math.floor(10000 + Math.random() * 90000);
 
-  const { data, error } = await supabaseClient
+  const { error } = await supabaseClient
     .from("proof_records")
     .insert([
       {
         proof_id: proofId,
         event_type: "verification",
-        industry: "general",
+        industry: industryName,
         status: "VERIFIED",
         verification_note: "Live VRI verification"
       }
     ]);
 
   if (error) {
-    console.error(error);
-    alert("Error creating proof record");
-    return;
+    console.error("Supabase error:", error);
+    alert("Error creating proof record: " + error.message);
+    return null;
   }
+
+  return proofId;
+}
+
+async function runVerification() {
+  const proofId = await createProofRecord("general");
+
+  if (!proofId) return;
 
   document.getElementById("proofId").textContent = proofId;
   document.getElementById("proofBox").style.display = "block";
+  document.getElementById("lookupProofId").value = proofId;
+  document.getElementById("lookupResult").innerHTML = "Proof created. Ready to verify.";
 }
- async function verifyProofRecord() {
+
+async function verifyProofRecord() {
   const proofId = document.getElementById("lookupProofId").value.trim();
 
   if (!proofId) {
@@ -405,29 +456,38 @@ async function runVerification() {
     .from("proof_records")
     .select("*")
     .eq("proof_id", proofId)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
-    document.getElementById("lookupResult").innerHTML =
-      "❌ NO VERIFIED RECORD FOUND";
+  if (error) {
+    console.error("Lookup error:", error);
+    document.getElementById("lookupResult").innerHTML = "Lookup error. Check console.";
     return;
   }
 
-async function verifyProofRecord() {
-  document.getElementById("lookupResult").innerHTML =
-    "<strong style='color:#00ff99;'>✔ VERIFIED RECORD</strong><br><br>" +
-    "<span style='color:#8fbfff;'>Proof ID:</span> " + data.proof_id + "<br>" +
-    "<span style='color:#8fbfff;'>Status:</span> " + data.status + "<br>" +
-    "<span style='color:#8fbfff;'>Event:</span> " + data.event_type + "<br>" +
-    "<span style='color:#8fbfff;'>Industry:</span> " + data.industry + "<br>" +
-    "<span style='color:#8fbfff;'>Time:</span> " + new Date(data.created_at).toLocaleString();
-} // ✅ THIS closes the function
+  if (!data) {
+    document.getElementById("lookupResult").innerHTML = "❌ No verified record found.";
+    return;
+  }
 
-function nodeClick(name) {
-  const proof = "VRI-" + name.toUpperCase().slice(0,3) + "-" + Math.floor(10000 + Math.random() * 90000);
-  document.getElementById("proofId").textContent = proof;
+  document.getElementById("lookupResult").innerHTML =
+    "<strong>✔ VERIFIED RECORD</strong><br>" +
+    "Proof ID: " + data.proof_id + "<br>" +
+    "Status: " + data.status + "<br>" +
+    "Industry: " + data.industry + "<br>" +
+    "Time: " + new Date(data.created_at).toLocaleString();
+}
+
+async function nodeClick(name) {
+  const proofId = await createProofRecord(name);
+
+  if (!proofId) return;
+
+  document.getElementById("proofId").textContent = proofId;
   document.getElementById("proofBox").style.display = "block";
+  document.getElementById("lookupProofId").value = proofId;
+  document.getElementById("lookupResult").innerHTML = name + " proof created. Ready to verify.";
 }
 </script>
+
 </body>
 </html>
