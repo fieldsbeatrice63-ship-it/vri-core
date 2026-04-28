@@ -250,12 +250,14 @@ const supabaseClient = window.supabase.createClient(
 
     <button class="run-btn" onclick="runVerification()">INITIATE VERIFICATION →</button>
 
-    <div class="proof-box" id="proofBox">
-      Proof ID:<br>
-      <span id="proofId"></span><br><br>
-      Status: VERIFIED
-    </div>
-  </div>
+   <div class="proof-box" id="proofBox">
+  <strong>✔ VERIFIED RECORD</strong><br><br>
+  Proof ID:<br>
+  <span id="proofId"></span><br><br>
+  Status: <span id="proofStatus">VERIFIED</span><br>
+  Industry: <span id="proofIndustry">general</span><br>
+  Timestamp: <span id="proofTimestamp"></span>
+</div>
 
   <div class="lookup-panel">
     <div class="lookup-title">VERIFY PROOF RECORD</div>
@@ -418,13 +420,14 @@ const supabaseClient = window.supabase.createClient(
 
 
 
+
 <script>
 let totalVerifications = 0;
 
 async function createProofRecord(industryName) {
   const proofId = "VRI-2026-" + Math.floor(10000 + Math.random() * 90000);
 
-  const { error } = await supabaseClient
+  const { data, error } = await supabaseClient
     .from("proof_records")
     .insert([
       {
@@ -434,7 +437,9 @@ async function createProofRecord(industryName) {
         status: "VERIFIED",
         verification_note: "Live VRI verification"
       }
-    ]);
+    ])
+    .select()
+    .single();
 
   if (error) {
     console.error("Supabase error:", error);
@@ -442,28 +447,35 @@ async function createProofRecord(industryName) {
     return null;
   }
 
-  return proofId;
+  return data;
+}
+
+function showCreatedProof(record) {
+  document.getElementById("proofId").textContent = record.proof_id;
+  document.getElementById("proofStatus").textContent = record.status;
+  document.getElementById("proofIndustry").textContent = record.industry || "N/A";
+  document.getElementById("proofTimestamp").textContent =
+    record.created_at ? new Date(record.created_at).toLocaleString() : "N/A";
+
+  document.getElementById("proofBox").style.display = "block";
+  document.getElementById("lookupProofId").value = record.proof_id;
+
+  totalVerifications++;
+  document.getElementById("liveCount").textContent = totalVerifications;
 }
 
 async function runVerification() {
   document.getElementById("lookupResult").innerHTML =
     "🔄 Processing verification...";
 
-  const proofId = await createProofRecord("general");
+  const record = await createProofRecord("general");
 
-  if (!proofId) return;
+  if (!record) return;
 
-  totalVerifications++;
-  document.getElementById("liveCount").textContent = totalVerifications;
+  showCreatedProof(record);
 
-  document.getElementById("proofId").textContent = proofId;
-  document.getElementById("proofBox").style.display = "block";
-  document.getElementById("lookupProofId").value = proofId;
-
-  setTimeout(() => {
-    document.getElementById("lookupResult").innerHTML =
-      "✔ Identity verified. Proof generated.";
-  }, 800);
+  document.getElementById("lookupResult").innerHTML =
+    "✔ Proof created. Full record displayed on left.";
 }
 
 async function verifyProofRecord() {
@@ -493,7 +505,6 @@ async function verifyProofRecord() {
     return;
   }
 
-  // 🔥 THIS IS THE PART YOU ARE MISSING
   document.getElementById("lookupResult").innerHTML =
     "<strong>✔ VERIFIED RECORD</strong><br>" +
     "Proof ID: " + data.proof_id + "<br>" +
@@ -501,27 +512,20 @@ async function verifyProofRecord() {
     "Industry: " + (data.industry || "N/A") + "<br>" +
     "Timestamp: " + (data.created_at ? new Date(data.created_at).toLocaleString() : "N/A");
 }
+
 async function nodeClick(name) {
   document.getElementById("lookupResult").innerHTML =
     "🔄 Processing " + name + " verification...";
 
-  const proofId = await createProofRecord(name);
+  const record = await createProofRecord(name);
 
-  if (!proofId) return;
+  if (!record) return;
 
-  totalVerifications++;
-  document.getElementById("liveCount").textContent = totalVerifications;
+  showCreatedProof(record);
 
-  document.getElementById("proofId").textContent = proofId;
-  document.getElementById("proofBox").style.display = "block";
-  document.getElementById("lookupProofId").value = proofId;
-
-  setTimeout(() => {
-    document.getElementById("lookupResult").innerHTML =
-      "✔ " + name + " proof created. Ready to verify.";
-  }, 800);
+  document.getElementById("lookupResult").innerHTML =
+    "✔ " + name + " proof created. Full record displayed on left.";
 }
-
 </script>
 </body>
 </html>
