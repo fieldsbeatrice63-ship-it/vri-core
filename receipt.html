@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Proof Receipt</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #020818, #040d2a, #020c1e);
+  color: white;
+  font-family: Arial, sans-serif;
+  padding: 40px;
+}
+
+.container {
+  max-width: 800px;
+  margin: auto;
+  background: rgba(2, 8, 24, 0.88);
+  border: 1px solid rgba(30, 143, 255, 0.55);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 0 24px rgba(0, 140, 255, 0.25);
+}
+
+h1 {
+  margin-top: 0;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  color: #8fbfff;
+  margin-bottom: 24px;
+}
+
+.lookup-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+input {
+  flex: 1;
+  padding: 13px;
+  background: #06142d;
+  border: 1px solid #1e8fff;
+  color: white;
+  border-radius: 8px;
+  outline: none;
+}
+
+button {
+  padding: 13px 20px;
+  border: 1px solid #1e8fff;
+  background: rgba(0, 80, 255, 0.25);
+  color: white;
+  border-radius: 8px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.card {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgba(30, 143, 255, 0.45);
+  border-radius: 12px;
+  background: rgba(0, 20, 50, 0.55);
+}
+
+.green { color: #00ff99; }
+.blue { color: #8fbfff; }
+.red { color: #ff6b6b; }
+
+.event {
+  padding: 10px;
+  border-left: 3px solid #00ff99;
+  margin-top: 10px;
+  background: rgba(0, 255, 153, 0.06);
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+}
+
+.small {
+  font-size: 13px;
+  color: #b9d6ff;
+}
+
+pre {
+  white-space: pre-wrap;
+  color: #dcecff;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>VRI™ Proof Receipt</h1>
+  <div class="subtitle">
+    Search a Proof ID to view the document proof, sender, recipient, receipt, and event history.
+  </div>
+
+  <div class="lookup-row">
+    <input id="proofInput" placeholder="Enter Proof ID, example: VRI-1777357933415" />
+    <button onclick="loadReceipt()">LOAD RECEIPT</button>
+  </div>
+
+  <div id="output"></div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+async function loadReceipt() {
+  const proofId = document.getElementById("proofInput").value.trim();
+  const output = document.getElementById("output");
+
+  if (!proofId) {
+    output.innerHTML = `<div class="card red">Enter a Proof ID first.</div>`;
+    return;
+  }
+
+  output.innerHTML = `<div class="card blue">Searching VRI proof record...</div>`;
+
+  try {
+    const { data: proofRecord, error: proofError } = await supabaseClient
+      .from("proof_records")
+      .select("*")
+      .eq("proof_id", proofId)
+      .maybeSingle();
+
+    if (proofError) throw proofError;
+
+    const { data: documentRecord, error: docError } = await supabaseClient
+      .from("documents")
+      .select("*")
+      .eq("proof_id", proofId)
+      .maybeSingle();
+
+    if (docError) throw docError;
+
+    const { data: events, error: eventError } = await supabaseClient
+      .from("verification_events")
+      .select("*")
+      .eq("proof_id", proofId)
+      .order("created_at", { ascending: true });
+
+    if (eventError) throw eventError;
+
+    const { data: recipientRecord, error: recipientError } = await supabaseClient
+      .from("recipients")
+      .select("*")
+      .eq("proof_id", proofId)
+      .maybeSingle();
+
+    if (recipientError) throw recipientError;
+
+    const { data: receiptRecord, error: receiptError } = await supabaseClient
+      .from("receipts")
+      .select("*")
+      .eq("proof_id", proofId)
+      .maybeSingle();
+
+    if (receiptError) throw receiptError;
+
+    if (!proofRecord && !documentRecord && (!events || events.length === 0)) {
+      output.innerHTML = `<div class="card red">No VRI proof record found for this Proof ID.</div>`;
+      return;
+    }
+
+    const eventHtml = (events || []).map(event => `
+      <div class="event">
+        <strong>${event.event_type}</strong><br>
+        ${event.event_note || ""}<br>
+        <span class="small">${new Date(event.created_at).toLocaleString()}</span>
+      </div>
+    `).join("");
+
+    output.innerHTML = `
+      <div class="card">
+        <h2 class="green">✔ VRI PROOF RECEIPT VERIFIED</h2>
+        <p><span class="blue">Proof ID:</span> ${proofId}</p>
+        <p><span class="blue">Proof Status:</span> ${proofRecord?.status || "VERIFIED"}</p>
+        <p><span class="blue">Industry:</span> ${proofRecord?.industry || "general"}</p>
+        <p><span class="blue">Receipt Status:</span> ${receiptRecord?.receipt_status || "GENERATED"}</p>
+        <p><span class="blue">Receipt Created:</span> ${receiptRecord?.created_at ? new Date(receiptRecord.created_at).toLocaleString() : "N/A"}</p>
+      </div>
+
+      <div class="card">
+        <h3>Sender</h3>
+        <p><span class="blue">Name:</span> ${documentRecord?.sender_name || "N/A"}</p>
+        <p><span class="blue">Email:</span> ${documentRecord?.sender_email || "N/A"}</p>
+        <p><span class="blue">Phone:</span> ${documentRecord?.sender_phone || "N/A"}</p>
+        <p><span class="blue">Business:</span> ${documentRecord?.sender_business || "N/A"}</p>
+      </div>
+
+      <div class="card">
+        <h3>Recipient</h3>
+        <p><span class="blue">Name:</span> ${recipientRecord?.recipient_name || documentRecord?.recipient_name || "N/A"}</p>
+        <p><span class="blue">Email:</span> ${recipientRecord?.recipient_email || documentRecord?.recipient_email || "N/A"}</p>
+        <p><span class="blue">Delivery Status:</span> ${recipientRecord?.delivery_status || "PENDING"}</p>
+      </div>
+
+      <div class="card">
+        <h3>Document</h3>
+        <p><span class="blue">Title:</span> ${documentRecord?.document_title || "Untitled Document"}</p>
+        <p><span class="blue">Type:</span> ${documentRecord?.document_type || "proof_document"}</p>
+        <p><span class="blue">Status:</span> ${documentRecord?.status || "CREATED"}</p>
+        <p><span class="blue">Created:</span> ${documentRecord?.created_at ? new Date(documentRecord.created_at).toLocaleString() : "N/A"}</p>
+        <pre>${documentRecord?.document_content || "No document content available."}</pre>
+      </div>
+
+      <div class="card">
+        <h3>Verification Event History</h3>
+        ${eventHtml || "<p>No events found.</p>"}
+      </div>
+    `;
+
+  } catch (error) {
+    console.error("Receipt lookup error:", error);
+    output.innerHTML = `<div class="card red">Error: ${error.message}</div>`;
+  }
+}
+</script>
+
+</body>
+</html>
