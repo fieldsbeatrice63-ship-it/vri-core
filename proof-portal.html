@@ -1,47 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>VRI Proof Portal</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Proof Portal</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background:#020818;
-  color:white;
-  font-family:Arial;
-  padding:40px;
+  margin: 0;
+  background: linear-gradient(135deg, #020818, #040d2a, #020c1e);
+  color: white;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  padding: 40px;
 }
 
 .container {
-  max-width:600px;
-  margin:auto;
+  max-width: 720px;
+  margin: auto;
+  background: rgba(2, 8, 24, 0.85);
+  border: 1px solid rgba(30, 143, 255, 0.55);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 0 24px rgba(0, 140, 255, 0.25);
 }
 
-input, textarea {
-  width:100%;
-  margin:10px 0;
-  padding:10px;
-  background:#06142d;
-  border:1px solid #1e6fd9;
-  color:white;
+h1 {
+  margin-top: 0;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  color: #8fbfff;
+  margin-bottom: 25px;
+}
+
+label {
+  display: block;
+  margin-top: 14px;
+  color: #8fbfff;
+  font-size: 13px;
+}
+
+input,
+textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px;
+  background: #06142d;
+  border: 1px solid #1e8fff;
+  color: white;
+  border-radius: 8px;
+  outline: none;
+}
+
+textarea {
+  min-height: 140px;
+  resize: vertical;
 }
 
 button {
-  width:100%;
-  padding:14px;
-  background:#1e6fd9;
-  border:none;
-  color:white;
-  font-weight:bold;
-  cursor:pointer;
+  width: 100%;
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid #1e8fff;
+  background: rgba(0, 80, 255, 0.25);
+  color: white;
+  border-radius: 8px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(0, 140, 255, 0.45);
+}
+
+button:hover {
+  background: rgba(0, 120, 255, 0.35);
 }
 
 .result {
-  margin-top:20px;
-  padding:15px;
-  border:1px solid #00ff99;
-  background:#001a0d;
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid rgba(0, 255, 153, 0.55);
+  background: rgba(0, 40, 20, 0.55);
+  color: #00ff99;
+  border-radius: 10px;
+  font-family: "Courier New", monospace;
+  line-height: 1.6;
+  display: none;
+}
+
+.error {
+  border-color: rgba(255, 60, 60, 0.7);
+  background: rgba(80, 0, 0, 0.45);
+  color: #ff6b6b;
 }
 </style>
 </head>
@@ -49,104 +106,168 @@ button {
 <body>
 
 <div class="container">
+  <h1>VRI™ Proof Portal</h1>
+  <div class="subtitle">
+    Create a document proof record, attach sender and recipient details, and generate a receipt.
+  </div>
 
-<h2>VRI Proof Portal</h2>
+  <label>Sender Name</label>
+  <input id="senderName" placeholder="Enter sender name">
 
-<input id="senderName" placeholder="Your Name">
-<input id="senderEmail" placeholder="Your Email">
-<input id="senderPhone" placeholder="Your Phone">
-<input id="businessName" placeholder="Business Name">
+  <label>Sender Email</label>
+  <input id="senderEmail" placeholder="Enter sender email">
 
-<input id="recipientName" placeholder="Recipient Name">
-<input id="recipientEmail" placeholder="Recipient Email">
+  <label>Sender Phone</label>
+  <input id="senderPhone" placeholder="Enter sender phone">
 
-<textarea id="documentContent" placeholder="Enter Document Content"></textarea>
+  <label>Business Name</label>
+  <input id="businessName" placeholder="Enter business name">
 
-<button onclick="createProof()">CREATE PROOF</button>
+  <label>Recipient Name</label>
+  <input id="recipientName" placeholder="Enter recipient name">
 
-<div id="result" class="result" style="display:none;"></div>
+  <label>Recipient Email</label>
+  <input id="recipientEmail" placeholder="Enter recipient email">
 
+  <label>Document Title</label>
+  <input id="documentTitle" placeholder="Enter document title">
+
+  <label>Document Content</label>
+  <textarea id="documentContent" placeholder="Enter or paste document content"></textarea>
+
+  <button onclick="createProof()">CREATE PROOF RECORD</button>
+
+  <div id="result" class="result"></div>
 </div>
 
 <script>
+const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
 
-const supabase = window.supabase.createClient(
-  "https://atoklygiqhyfuorhtmfl.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0"
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
 );
 
 async function createProof() {
+  const resultBox = document.getElementById("result");
+  resultBox.className = "result";
+  resultBox.style.display = "block";
+  resultBox.innerHTML = "Creating proof record...";
 
-  const proofId = "VRI-" + Date.now();
+  try {
+    const proofId = "VRI-" + Date.now();
 
-  const senderName = document.getElementById("senderName").value;
-  const senderEmail = document.getElementById("senderEmail").value;
-  const senderPhone = document.getElementById("senderPhone").value;
-  const businessName = document.getElementById("businessName").value;
+    const senderName = document.getElementById("senderName").value.trim();
+    const senderEmail = document.getElementById("senderEmail").value.trim();
+    const senderPhone = document.getElementById("senderPhone").value.trim();
+    const businessName = document.getElementById("businessName").value.trim();
 
-  const recipientName = document.getElementById("recipientName").value;
-  const recipientEmail = document.getElementById("recipientEmail").value;
+    const recipientName = document.getElementById("recipientName").value.trim();
+    const recipientEmail = document.getElementById("recipientEmail").value.trim();
 
-  const documentContent = document.getElementById("documentContent").value;
+    const documentTitle = document.getElementById("documentTitle").value.trim();
+    const documentContent = document.getElementById("documentContent").value.trim();
 
-  // 1. Create document
-  await supabase.from("documents").insert([{
-    proof_id: proofId,
-    document_content: documentContent,
-    sender_name: senderName,
-    sender_email: senderEmail,
-    sender_phone: senderPhone,
-    sender_business: businessName,
-    recipient_name: recipientName,
-    recipient_email: recipientEmail
-  }]);
+    if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
+      throw new Error("Please fill in sender, recipient, and document content.");
+    }
 
-  // 2. Create proof record (existing table)
-  await supabase.from("proof_records").insert([{
-    proof_id: proofId,
-    event_type: "created",
-    industry: "general",
-    status: "VERIFIED"
-  }]);
+    const { error: documentError } = await supabaseClient
+      .from("documents")
+      .insert([{
+        proof_id: proofId,
+        document_title: documentTitle || "Untitled Document",
+        document_type: "proof_document",
+        document_content: documentContent,
+        sender_name: senderName,
+        sender_email: senderEmail,
+        sender_phone: senderPhone,
+        sender_business: businessName,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail,
+        status: "CREATED"
+      }]);
 
-  // 3. Event: created
-  await supabase.from("verification_events").insert([{
-    proof_id: proofId,
-    event_type: "DOCUMENT_CREATED"
-  }]);
+    if (documentError) throw documentError;
 
-  // 4. Event: sent
-  await supabase.from("verification_events").insert([{
-    proof_id: proofId,
-    event_type: "DOCUMENT_SENT"
-  }]);
+    const { error: proofError } = await supabaseClient
+      .from("proof_records")
+      .insert([{
+        proof_id: proofId,
+        event_type: "created",
+        industry: "general",
+        status: "VERIFIED",
+        verification_note: "Proof portal record created"
+      }]);
 
-  // 5. Recipient
-  await supabase.from("recipients").insert([{
-    proof_id: proofId,
-    recipient_name: recipientName,
-    recipient_email: recipientEmail
-  }]);
+    if (proofError) throw proofError;
 
-  // 6. Receipt
-  await supabase.from("receipts").insert([{
-    proof_id: proofId
-  }]);
+    const { error: eventError } = await supabaseClient
+      .from("verification_events")
+      .insert([
+        {
+          proof_id: proofId,
+          event_type: "DOCUMENT_CREATED",
+          event_note: "Document proof record created"
+        },
+        {
+          proof_id: proofId,
+          event_type: "DOCUMENT_APPROVED",
+          event_note: "Document proof record approved for receipt generation"
+        },
+        {
+          proof_id: proofId,
+          event_type: "DOCUMENT_SENT",
+          event_note: "Recipient attached to proof workflow"
+        },
+        {
+          proof_id: proofId,
+          event_type: "RECEIPT_GENERATED",
+          event_note: "Proof receipt generated"
+        }
+      ]);
 
-  // SHOW RESULT
-  const box = document.getElementById("result");
+    if (eventError) throw eventError;
 
-  box.style.display = "block";
-  box.innerHTML = `
-    ✔ PROOF CREATED<br><br>
-    Proof ID: ${proofId}<br>
-    Status: VERIFIED<br>
-    Sender: ${senderName}<br>
-    Recipient: ${recipientName}<br>
-    Timestamp: ${new Date().toLocaleString()}
-  `;
+    const { error: recipientError } = await supabaseClient
+      .from("recipients")
+      .insert([{
+        proof_id: proofId,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail,
+        recipient_phone: "",
+        delivery_status: "PENDING"
+      }]);
+
+    if (recipientError) throw recipientError;
+
+    const { error: receiptError } = await supabaseClient
+      .from("receipts")
+      .insert([{
+        proof_id: proofId,
+        receipt_status: "GENERATED",
+        receipt_note: "Receipt generated through VRI Proof Portal"
+      }]);
+
+    if (receiptError) throw receiptError;
+
+    resultBox.innerHTML =
+      "<strong>✔ PROOF RECORD CREATED</strong><br><br>" +
+      "Proof ID: " + proofId + "<br>" +
+      "Status: VERIFIED<br>" +
+      "Sender: " + senderName + "<br>" +
+      "Recipient: " + recipientName + "<br>" +
+      "Business: " + (businessName || "N/A") + "<br>" +
+      "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
+      "Events logged: Created, Approved, Sent, Receipt Generated";
+
+  } catch (error) {
+    console.error("VRI Proof Portal Error:", error);
+    resultBox.className = "result error";
+    resultBox.innerHTML = "Error: " + error.message;
+  }
 }
-
 </script>
 
 </body>
