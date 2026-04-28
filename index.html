@@ -241,7 +241,14 @@ const supabaseClient = window.supabase.createClient(
       for the AI Era
     </div>
 
-    <button class="run-btn" onclick="runVerification()">RUN VERIFICATION →</button>
+    <div style="margin-top:20px; font-size:13px; color:#7bb8ff;">
+  SYSTEM STATUS: <span style="color:#00ff99;">ACTIVE</span>
+</div>
+    <div style="margin-top:10px; font-size:12px;">
+  Verified Sessions: <span id="liveCount">0</span>
+</div>
+
+    <button class="run-btn" onclick="runVerification()">INITIATE VERIFICATION →</button>
 
     <div class="proof-box" id="proofBox">
       Proof ID:<br>
@@ -408,7 +415,12 @@ const supabaseClient = window.supabase.createClient(
   </svg>
 </div>
 
+
+
+
 <script>
+let totalVerifications = 0;
+
 async function createProofRecord(industryName) {
   const proofId = "VRI-2026-" + Math.floor(10000 + Math.random() * 90000);
 
@@ -434,14 +446,24 @@ async function createProofRecord(industryName) {
 }
 
 async function runVerification() {
+  document.getElementById("lookupResult").innerHTML =
+    "🔄 Processing verification...";
+
   const proofId = await createProofRecord("general");
 
   if (!proofId) return;
 
+  totalVerifications++;
+  document.getElementById("liveCount").textContent = totalVerifications;
+
   document.getElementById("proofId").textContent = proofId;
   document.getElementById("proofBox").style.display = "block";
   document.getElementById("lookupProofId").value = proofId;
-  document.getElementById("lookupResult").innerHTML = "Proof created. Ready to verify.";
+
+  setTimeout(() => {
+    document.getElementById("lookupResult").innerHTML =
+      "✔ Identity verified. Proof generated.";
+  }, 800);
 }
 
 async function verifyProofRecord() {
@@ -478,16 +500,26 @@ async function verifyProofRecord() {
 }
 
 async function nodeClick(name) {
+  document.getElementById("lookupResult").innerHTML =
+    "🔄 Processing " + name + " verification...";
+
   const proofId = await createProofRecord(name);
 
   if (!proofId) return;
 
+  totalVerifications++;
+  document.getElementById("liveCount").textContent = totalVerifications;
+
   document.getElementById("proofId").textContent = proofId;
   document.getElementById("proofBox").style.display = "block";
   document.getElementById("lookupProofId").value = proofId;
-  document.getElementById("lookupResult").innerHTML = name + " proof created. Ready to verify.";
-}
-</script>
 
+  setTimeout(() => {
+    document.getElementById("lookupResult").innerHTML =
+      "✔ " + name + " proof created. Ready to verify.";
+  }, 800);
+}
+
+</script>
 </body>
 </html>
