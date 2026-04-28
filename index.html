@@ -185,6 +185,26 @@ const supabaseClient = window.supabase.createClient(
     </div>
   </div>
 
+ <div class="proof-box" style="display:block; margin-top:35px;">
+  <div style="color:#c9d8ff; margin-bottom:10px;">Verify Proof Record</div>
+
+  <input 
+    id="lookupProofId"
+    placeholder="Enter Proof ID"
+    style="width:100%; padding:12px; border-radius:6px; border:1px solid #1e8fff; background:#06142d; color:white;"
+  />
+
+  <button 
+    class="run-btn" 
+    style="width:100%; margin-top:12px; padding:13px;"
+    onclick="verifyProofRecord()"
+  >
+    VERIFY PROOF ID
+  </button>
+
+  <div id="lookupResult" style="margin-top:15px; color:#00ff99; font-family:'Courier New', monospace;"></div>
+</div>
+
   <div class="corner">⌜ ⌝</div>
 
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
@@ -359,6 +379,34 @@ async function runVerification() {
 
   document.getElementById("proofId").textContent = proofId;
   document.getElementById("proofBox").style.display = "block";
+}
+ async function verifyProofRecord() {
+  const proofId = document.getElementById("lookupProofId").value.trim();
+
+  if (!proofId) {
+    document.getElementById("lookupResult").innerHTML = "Enter a Proof ID first.";
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("proof_records")
+    .select("*")
+    .eq("proof_id", proofId)
+    .single();
+
+  if (error || !data) {
+    document.getElementById("lookupResult").innerHTML =
+      "❌ NO VERIFIED RECORD FOUND";
+    return;
+  }
+
+  document.getElementById("lookupResult").innerHTML =
+    "✅ VERIFIED RECORD FOUND<br><br>" +
+    "Proof ID: " + data.proof_id + "<br>" +
+    "Status: " + data.status + "<br>" +
+    "Event: " + data.event_type + "<br>" +
+    "Industry: " + data.industry + "<br>" +
+    "Timestamp: " + new Date(data.created_at).toLocaleString();
 }
 
 function nodeClick(name) {
