@@ -248,17 +248,25 @@ const supabaseClient = window.supabase.createClient(
   Verified Sessions: <span id="liveCount">0</span>
 </div>
 
-    <button class="run-btn" onclick="runVerification()">INITIATE VERIFICATION →</button>
+           <button class="run-btn" onclick="runVerification()">INITIATE VERIFICATION →</button>
 
-   <div class="proof-box" id="proofBox">
-  <strong>✔ VERIFIED RECORD</strong><br><br>
-  Proof ID:<br>
-  <span id="proofId"></span><br><br>
-  Status: <span id="proofStatus">VERIFIED</span><br>
-  Industry: <span id="proofIndustry">general</span><br>
-  Timestamp: <span id="proofTimestamp"></span>
-</div>
+    <!-- ✅ PROOF BOX (LEFT SIDE CLEAN) -->
+    <div class="proof-box" id="proofBox" style="display:none;">
+      <div style="margin-bottom:8px;">
+        <span style="color:#8fbfff;">Proof ID:</span>
+      </div>
 
+      <div id="proofId" style="margin-bottom:12px; font-weight:bold;"></div>
+
+      <div>
+        <span style="color:#8fbfff;">Status:</span> 
+        <span style="color:#00ff99;">VERIFIED</span>
+      </div>
+    </div>
+
+  </div> <!-- ✅ CLOSE LEFT PANEL (DO NOT REMOVE) -->
+
+  <!-- ✅ LOOKUP PANEL (RIGHT SIDE FIXED) -->
   <div class="lookup-panel">
     <div class="lookup-title">VERIFY PROOF RECORD</div>
 
