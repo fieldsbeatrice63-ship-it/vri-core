@@ -142,6 +142,20 @@
     font-size: 34px;
     opacity: 0.8;
   }
+ .lookup-result {
+  margin-top: 15px;
+  padding: 14px;
+  background: rgba(0, 20, 50, 0.6);
+  border: 1px solid #1e8fff;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #00ff99;
+  line-height: 1.5;
+  max-height: 140px;
+  overflow-y: auto;
+  box-shadow: 0 0 10px rgba(0, 200, 255, 0.2);
+}
 </style>
 
 
@@ -201,8 +215,7 @@ const supabaseClient = window.supabase.createClient(
   >
     VERIFY PROOF ID
   </button>
-
-  <div id="lookupResult" style="margin-top:15px; color:#00ff99; font-family:'Courier New', monospace;"></div>
+<div id="lookupResult" class="lookup-result"></div>
 </div>
 
   <div class="corner">⌜ ⌝</div>
@@ -400,14 +413,15 @@ async function runVerification() {
     return;
   }
 
+async function verifyProofRecord() {
   document.getElementById("lookupResult").innerHTML =
-    "✅ VERIFIED RECORD FOUND<br><br>" +
-    "Proof ID: " + data.proof_id + "<br>" +
-    "Status: " + data.status + "<br>" +
-    "Event: " + data.event_type + "<br>" +
-    "Industry: " + data.industry + "<br>" +
-    "Timestamp: " + new Date(data.created_at).toLocaleString();
-}
+    "<strong style='color:#00ff99;'>✔ VERIFIED RECORD</strong><br><br>" +
+    "<span style='color:#8fbfff;'>Proof ID:</span> " + data.proof_id + "<br>" +
+    "<span style='color:#8fbfff;'>Status:</span> " + data.status + "<br>" +
+    "<span style='color:#8fbfff;'>Event:</span> " + data.event_type + "<br>" +
+    "<span style='color:#8fbfff;'>Industry:</span> " + data.industry + "<br>" +
+    "<span style='color:#8fbfff;'>Time:</span> " + new Date(data.created_at).toLocaleString();
+} // ✅ THIS closes the function
 
 function nodeClick(name) {
   const proof = "VRI-" + name.toUpperCase().slice(0,3) + "-" + Math.floor(10000 + Math.random() * 90000);
