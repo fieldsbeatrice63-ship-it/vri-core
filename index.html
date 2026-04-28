@@ -493,12 +493,13 @@ async function verifyProofRecord() {
     return;
   }
 
+  // 🔥 THIS IS THE PART YOU ARE MISSING
   document.getElementById("lookupResult").innerHTML =
     "<strong>✔ VERIFIED RECORD</strong><br>" +
     "Proof ID: " + data.proof_id + "<br>" +
     "Status: " + data.status + "<br>" +
-    "Industry: " + data.industry + "<br>" +
-    "Timestamp: " + new Date(data.created_at).toLocaleString();
+    "Industry: " + (data.industry || "N/A") + "<br>" +
+    "Timestamp: " + (data.created_at ? new Date(data.created_at).toLocaleString() : "N/A");
 }
 async function nodeClick(name) {
   document.getElementById("lookupResult").innerHTML =
