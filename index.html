@@ -71,6 +71,18 @@ body {
   line-height: 1.5;
 }
 
+.system-readout {
+  margin-top: 20px;
+  font-size: 13px;
+  color: #7bb8ff;
+}
+
+.session-count {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #c9d8ff;
+}
+
 .run-btn {
   margin-top: 30px;
   width: 100%;
@@ -99,6 +111,11 @@ body {
   border: 1px solid rgba(0, 255, 153, 0.35);
   border-radius: 8px;
   line-height: 1.5;
+  font-size: 12px;
+}
+
+.label-blue {
+  color: #8fbfff;
 }
 
 .lookup-title {
@@ -142,7 +159,7 @@ body {
   color: #00ff99;
   line-height: 1.45;
   min-height: 42px;
-  max-height: 135px;
+  max-height: 150px;
   overflow-y: auto;
 }
 
@@ -173,10 +190,6 @@ svg {
   transform-origin: 600px 424px;
 }
 
-.glow-pulse {
-  animation: glowPulse 2.5s infinite ease-in-out;
-}
-
 @keyframes pulse {
   0%, 100% { opacity: 0.25; transform: scale(1); }
   50% { opacity: 0.9; transform: scale(1.04); }
@@ -185,11 +198,6 @@ svg {
 @keyframes rotateCore {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-@keyframes glowPulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
 }
 
 @media (max-width: 900px) {
@@ -241,32 +249,39 @@ const supabaseClient = window.supabase.createClient(
       for the AI Era
     </div>
 
-    <div style="margin-top:20px; font-size:13px; color:#7bb8ff;">
-  SYSTEM STATUS: <span style="color:#00ff99;">ACTIVE</span>
-</div>
-    <div style="margin-top:10px; font-size:12px;">
-  Verified Sessions: <span id="liveCount">0</span>
-</div>
-
-           <button class="run-btn" onclick="runVerification()">INITIATE VERIFICATION →</button>
-
-    <!-- ✅ PROOF BOX (LEFT SIDE CLEAN) -->
-    <div class="proof-box" id="proofBox" style="display:none;">
-      <div style="margin-bottom:8px;">
-        <span style="color:#8fbfff;">Proof ID:</span>
-      </div>
-
-      <div id="proofId" style="margin-bottom:12px; font-weight:bold;"></div>
-
-      <div>
-        <span style="color:#8fbfff;">Status:</span> 
-        <span style="color:#00ff99;">VERIFIED</span>
-      </div>
+    <div class="system-readout">
+      SYSTEM STATUS: <span style="color:#00ff99;">ACTIVE</span>
     </div>
 
-  </div> <!-- ✅ CLOSE LEFT PANEL (DO NOT REMOVE) -->
+    <div class="session-count">
+      Verified Sessions: <span id="liveCount">0</span>
+    </div>
 
-  <!-- ✅ LOOKUP PANEL (RIGHT SIDE FIXED) -->
+    <button class="run-btn" onclick="runVerification()">INITIATE VERIFICATION →</button>
+
+    <div class="proof-box" id="proofBox">
+      <strong>✔ VERIFIED RECORD</strong><br><br>
+
+      <span class="label-blue">Proof ID:</span><br>
+      <span id="proofId" style="font-weight:bold; display:block; margin-top:4px;"></span>
+
+      <div style="margin-top:10px;">
+        <span class="label-blue">Status:</span>
+        <span id="proofStatus" style="color:#00ff99;">VERIFIED</span>
+      </div>
+
+      <div>
+        <span class="label-blue">Industry:</span>
+        <span id="proofIndustry">general</span>
+      </div>
+
+      <div>
+        <span class="label-blue">Timestamp:</span>
+        <span id="proofTimestamp"></span>
+      </div>
+    </div>
+  </div>
+
   <div class="lookup-panel">
     <div class="lookup-title">VERIFY PROOF RECORD</div>
 
@@ -425,10 +440,6 @@ const supabaseClient = window.supabase.createClient(
   </svg>
 </div>
 
-
-
-
-
 <script>
 let totalVerifications = 0;
 
@@ -458,18 +469,15 @@ async function createProofRecord(industryName) {
   return data;
 }
 
-function showCreatedProof(record) {
+function showProofRecord(record) {
   document.getElementById("proofId").textContent = record.proof_id;
-  document.getElementById("proofStatus").textContent = record.status;
+  document.getElementById("proofStatus").textContent = record.status || "VERIFIED";
   document.getElementById("proofIndustry").textContent = record.industry || "N/A";
   document.getElementById("proofTimestamp").textContent =
     record.created_at ? new Date(record.created_at).toLocaleString() : "N/A";
 
   document.getElementById("proofBox").style.display = "block";
   document.getElementById("lookupProofId").value = record.proof_id;
-
-  totalVerifications++;
-  document.getElementById("liveCount").textContent = totalVerifications;
 }
 
 async function runVerification() {
@@ -480,10 +488,13 @@ async function runVerification() {
 
   if (!record) return;
 
-  showCreatedProof(record);
+  showProofRecord(record);
+
+  totalVerifications++;
+  document.getElementById("liveCount").textContent = totalVerifications;
 
   document.getElementById("lookupResult").innerHTML =
-    "✔ Proof created. Full record displayed on left.";
+    "✔ Identity verified. Proof generated.";
 }
 
 async function verifyProofRecord() {
@@ -494,7 +505,8 @@ async function verifyProofRecord() {
     return;
   }
 
-  document.getElementById("lookupResult").innerHTML = "🔎 Searching proof record...";
+  document.getElementById("lookupResult").innerHTML =
+    "🔎 Searching proof record...";
 
   const { data, error } = await supabaseClient
     .from("proof_records")
@@ -504,14 +516,18 @@ async function verifyProofRecord() {
 
   if (error) {
     console.error("Lookup error:", error);
-    document.getElementById("lookupResult").innerHTML = "Lookup error. Check console.";
+    document.getElementById("lookupResult").innerHTML =
+      "Lookup error. Check console.";
     return;
   }
 
   if (!data) {
-    document.getElementById("lookupResult").innerHTML = "❌ No verified record found.";
+    document.getElementById("lookupResult").innerHTML =
+      "❌ No verified record found.";
     return;
   }
+
+  showProofRecord(data);
 
   document.getElementById("lookupResult").innerHTML =
     "<strong>✔ VERIFIED RECORD</strong><br>" +
@@ -529,10 +545,13 @@ async function nodeClick(name) {
 
   if (!record) return;
 
-  showCreatedProof(record);
+  showProofRecord(record);
+
+  totalVerifications++;
+  document.getElementById("liveCount").textContent = totalVerifications;
 
   document.getElementById("lookupResult").innerHTML =
-    "✔ " + name + " proof created. Full record displayed on left.";
+    "✔ " + name + " proof created.";
 }
 </script>
 </body>
