@@ -474,6 +474,8 @@ async function verifyProofRecord() {
     return;
   }
 
+  document.getElementById("lookupResult").innerHTML = "🔎 Searching proof record...";
+
   const { data, error } = await supabaseClient
     .from("proof_records")
     .select("*")
@@ -496,9 +498,8 @@ async function verifyProofRecord() {
     "Proof ID: " + data.proof_id + "<br>" +
     "Status: " + data.status + "<br>" +
     "Industry: " + data.industry + "<br>" +
-    "Time: " + new Date(data.created_at).toLocaleString();
+    "Timestamp: " + new Date(data.created_at).toLocaleString();
 }
-
 async function nodeClick(name) {
   document.getElementById("lookupResult").innerHTML =
     "🔄 Processing " + name + " verification...";
