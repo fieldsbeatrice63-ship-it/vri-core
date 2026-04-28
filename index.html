@@ -143,6 +143,21 @@
     opacity: 0.8;
   }
 </style>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = "atoklygiqhyfuorhtmfl";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+</script>
+
+</head>
 </head>
 
 <body>
@@ -322,21 +337,36 @@
 </div>
 
 <script>
-function runVerification() {
-  const proof = "VRI-2026-" + Math.floor(10000 + Math.random() * 89999);
-  document.getElementById("proofId").textContent = proof;
-  document.getElementById("proofBox").style.display = "block";
+async function runVerification() {
+  const proofId = "VRI-2026-" + Math.floor(10000 + Math.random() * 90000);
 
-  const badge = document.getElementById("verifiedBadge");
-  badge.classList.add("glow-pulse");
+  const { data, error } = await supabaseClient
+    .from("proof_records")
+    .insert([
+      {
+        proof_id: proofId,
+        event_type: "verification",
+        industry: "general",
+        status: "VERIFIED",
+        verification_note: "Live VRI verification"
+      }
+    ]);
+
+  if (error) {
+    console.error(error);
+    alert("Error creating proof record");
+    return;
+  }
+
+  document.getElementById("proofId").textContent = proofId;
+  document.getElementById("proofBox").style.display = "block";
 }
 
 function nodeClick(name) {
-  const proof = "VRI-" + name.toUpperCase().slice(0,3) + "-" + Math.floor(10000 + Math.random() * 89999);
+  const proof = "VRI-" + name.toUpperCase().slice(0,3) + "-" + Math.floor(10000 + Math.random() * 90000);
   document.getElementById("proofId").textContent = proof;
   document.getElementById("proofBox").style.display = "block";
 }
 </script>
-
 </body>
 </html>
