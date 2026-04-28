@@ -96,16 +96,71 @@ pre {
   white-space: pre-wrap;
   color: #dcecff;
 }
+
+  .receipt-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: 1px solid rgba(0, 255, 153, 0.55);
+  border-radius: 999px;
+  color: #00ff99;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  background: rgba(0, 255, 153, 0.08);
+}
+
+.receipt-header {
+  border-bottom: 1px solid rgba(30, 143, 255, 0.35);
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+}
+
+.card h2,
+.card h3 {
+  margin-top: 0;
+  letter-spacing: 1px;
+}
+
+.proof-watermark {
+  margin-top: 18px;
+  padding: 10px;
+  border: 1px dashed rgba(143, 191, 255, 0.35);
+  color: #8fbfff;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+
+  @media print {
+  button {
+    display: none;
+  }
+}
 </style>
 </head>
 
 <body>
 
 <div class="container">
-  <h1>VRI™ Proof Receipt</h1>
+  <div class="receipt-header">
+  <h1>VRI™ Verified Proof Receipt</h1>
+
   <div class="subtitle">
-    Search a Proof ID to view the document proof, sender, recipient, receipt, and event history.
+    This receipt represents a verified record of a document event captured in the VRI system.
+    It includes creation data, sender and recipient details, and a complete audit trail of actions tied to this Proof ID.
   </div>
+
+  <div class="receipt-badge">
+    LIVE VERIFICATION SYSTEM · AUDIT TRAIL ACTIVE · PROOF RECORD LOCKED
+  </div>
+</div>
+
+  <div style="margin-top:15px; display:flex; gap:10px;">
+    <button onclick="printReceipt()" style="flex:1;">PRINT RECEIPT</button>
+    <button onclick="downloadPDF()" style="flex:1;">SAVE AS PDF</button>
+  </div>
+
+</div>
 
   <div class="lookup-row">
     <input id="proofInput" placeholder="Enter Proof ID, example: VRI-1777357933415" />
@@ -245,6 +300,15 @@ async function loadReceipt() {
     loadReceipt();
   }
 });
+
+  function printReceipt() {
+  window.print();
+}
+
+function downloadPDF() {
+  alert("Use your browser's print option and choose 'Save as PDF'");
+  window.print();
+}
 </script>
 
 </body>
