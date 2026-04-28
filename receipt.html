@@ -136,6 +136,64 @@ pre {
     display: none;
   }
 }
+  /* MAIN TEXT FIX */
+body {
+  color: #0a2540; /* dark navy instead of light */
+}
+
+/* HEADINGS */
+h1, h2, h3 {
+  color: #003366;
+}
+
+/* LABEL TEXT (Proof ID, Sender, etc.) */
+.blue {
+  color: #0056b3; /* darker blue */
+}
+
+/* NORMAL TEXT */
+.small, p, span {
+  color: #1a1a1a;
+}
+
+/* EVENT TEXT */
+.event {
+  color: #0f172a;
+}
+  @media print {
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .container {
+    width: 100%;
+    box-shadow: none;
+    border: none;
+  }
+
+  /* 🔥 THIS FIXES CUTTING */
+  .card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Prevent awkward splits */
+  h2, h3 {
+    page-break-after: avoid;
+  }
+
+  /* Hide buttons when printing */
+  button {
+    display: none;
+  }
+}
+  @media print {
+  body {
+    zoom: 0.9;
+  }
+}
 </style>
 </head>
 
