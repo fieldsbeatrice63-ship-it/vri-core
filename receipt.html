@@ -234,6 +234,17 @@ async function loadReceipt() {
     output.innerHTML = `<div class="card red">Error: ${error.message}</div>`;
   }
 }
+
+
+  window.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const proofFromUrl = params.get("proof");
+
+  if (proofFromUrl) {
+    document.getElementById("proofInput").value = proofFromUrl;
+    loadReceipt();
+  }
+});
 </script>
 
 </body>
