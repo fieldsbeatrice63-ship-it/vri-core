@@ -452,7 +452,7 @@ const supabaseClient = window.supabase.createClient(
 </div>
 
 <script>
-let totalVerifications = 0;
+//let totalVerifications = 0;
 
 async function createProofRecord(industryName) {
   const proofId = "VRI-2026-" + Math.floor(10000 + Math.random() * 90000);
@@ -501,8 +501,8 @@ async function runVerification() {
 
   showProofRecord(record);
 
-  totalVerifications++;
-  document.getElementById("liveCount").textContent = totalVerifications;
+  //totalVerifications++;
+ // document.getElementById("liveCount").textContent = totalVerifications;
 
   document.getElementById("lookupResult").innerHTML =
   "✔ Identity verified. Proof generated.<br><br>" +
@@ -576,6 +576,17 @@ async function nodeClick(name) {
 
   window.location.href = "/receipt.html?proof=" + proofId;
 }
+
+  async function loadCounts() {
+  const { count } = await supabaseClient
+    .from("proof_records")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "VERIFIED");
+
+  document.getElementById("verifiedCount").textContent = count || 0;
+}
+
+loadCounts();
 </script>
 </body>
 </html>
