@@ -209,6 +209,34 @@ h1, h2, h3 {
 .card .blue {
   color: #8fbfff;
 }
+
+  .vri-seal {
+  margin-top: 18px;
+  width: 130px;
+  height: 130px;
+  border: 2px solid #00ff99;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #00ff99;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  line-height: 1.4;
+  box-shadow: 0 0 18px rgba(0, 255, 153, 0.35);
+  background: rgba(0, 255, 153, 0.06);
+}
+
+@media print {
+  .vri-seal {
+    color: #004d2d !important;
+    border-color: #004d2d !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+}
 </style>
 </head>
 
@@ -226,6 +254,13 @@ h1, h2, h3 {
   <div class="receipt-badge">
     LIVE VERIFICATION SYSTEM · AUDIT TRAIL ACTIVE · PROOF RECORD LOCKED
   </div>
+</div>
+  
+  <div class="vri-seal">
+  VRI™<br>
+  VERIFIED<br>
+  PROOF<br>
+  RECEIPT
 </div>
 
   <div style="margin-top:15px; display:flex; gap:10px;">
