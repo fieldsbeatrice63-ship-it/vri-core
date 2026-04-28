@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Investor Demo Monitor</title>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #020818;
+  --bg2: #040d2a;
+  --blue: #1e6fd9;
+  --blueLight: #4da6ff;
+  --cyan: #00c8ff;
+  --green: #00ff99;
+  --yellow: #e6cc00;
+  --orange: #ff8c00;
+  --red: #ff3c3c;
+  --text: #e8f4ff;
+  --dim: #7bb8ff;
+  --border: rgba(30,111,217,0.35);
+  --panel: rgba(4,13,42,0.82);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Courier New", monospace;
+  overflow: hidden;
+}
+
+.screen {
+  width: 100vw;
+  height: 100vh;
+  background:
+    radial-gradient(circle at center, rgba(0,200,255,0.12), transparent 35%),
+    linear-gradient(135deg, #020818, #040d2a, #020c1e);
+  display: grid;
+  grid-template-rows: 72px 1fr 36px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(2,8,24,0.76);
+}
+
+h1 {
+  font-size: 20px;
+  letter-spacing: 3px;
+  font-family: Georgia, serif;
+}
+
+.subtitle {
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+
+.live {
+  color: var(--green);
+  font-size: 12px;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 320px 1fr 320px;
+  height: 100%;
+}
+
+.panel {
+  padding: 18px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.panel.right {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+.panel-title {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.feed-item, .activity-item {
+  border: 1px solid var(--border);
+  background: rgba(0,20,50,0.48);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.feed-item.red { border-left: 4px solid var(--red); }
+.feed-item.orange { border-left: 4px solid var(--orange); }
+.feed-item.green { border-left: 4px solid var(--green); }
+
+.tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  border: 1px solid var(--border);
+  color: var(--dim);
+}
+
+.center {
+  position: relative;
+  overflow: hidden;
+}
+
+.center-header {
+  height: 76px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(2,8,24,0.45);
+}
+
+.center-title {
+  font-family: Georgia, serif;
+  font-size: 15px;
+  letter-spacing: 2px;
+}
+
+.stats {
+  display: flex;
+  gap: 24px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat strong {
+  display: block;
+  font-size: 22px;
+}
+
+.stat span {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+}
+
+.map {
+  height: calc(100% - 76px);
+  position: relative;
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(30,111,217,0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30,111,217,0.15) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.35;
+}
+
+.core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 150px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 40px rgba(0,200,255,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2.5s infinite;
+  background: rgba(0,20,60,0.72);
+}
+
+.core span {
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.node {
+  position: absolute;
+  width: 110px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+  background: rgba(4,13,42,0.8);
+  color: var(--dim);
+  font-size: 11px;
+  box-shadow: 0 0 18px rgba(0,140,255,0.2);
+}
+
+.node.one { left: 17%; top: 22%; }
+.node.two { right: 17%; top: 22%; }
+.node.three { left: 17%; bottom: 22%; }
+.node.four { right: 17%; bottom: 22%; }
+
+.alert {
+  position: absolute;
+  left: 50%;
+  top: 92px;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  color: var(--red);
+  background: rgba(255,60,60,0.1);
+  letter-spacing: 2px;
+  font-size: 11px;
+  animation: blink 1.8s infinite;
+}
+
+.badge {
+  float: right;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+.verified {
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+.flagged {
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+
+.progress {
+  margin-top: 8px;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.fill.green { height: 100%; background: var(--green); }
+.fill.cyan { height: 100%; background: var(--cyan); }
+.fill.red { height: 100%; background: var(--red); }
+
+footer {
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  color: var(--dim);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 22px rgba(0,200,255,0.35); }
+  50% { box-shadow: 0 0 55px rgba(0,200,255,0.75); }
+}
+
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+</style>
+</head>
+
+<body>
+<div class="screen">
+
+<header>
+  <div>
+    <h1>VRI™ THREAT & VERIFICATION MONITOR</h1>
+    <div class="subtitle">INVESTOR DEMO · REAL-TIME TRUST INFRASTRUCTURE</div>
+  </div>
+  <div class="live">● LIVE FEED<br><span id="clock">--:--:--</span></div>
+</header>
+
+<main>
+
+  <section class="panel">
+    <div class="panel-title">ACTIVE THREAT FEED</div>
+
+    <div class="feed-item red">
+      <strong style="color:var(--red);">IDENTITY MISMATCH</strong><br>
+      Biometric pattern does not match prior proof record.
+      <br><span class="tag">Risk: High</span>
+    </div>
+
+    <div class="feed-item orange">
+      <strong style="color:var(--orange);">GEO ANOMALY</strong><br>
+      Verification request originated outside expected region.
+      <br><span class="tag">Risk: Medium</span>
+    </div>
+
+    <div class="feed-item green">
+      <strong style="color:var(--green);">VERIFIED SESSION</strong><br>
+      Finance verification completed with timestamped proof.
+      <br><span class="tag">Proof ID: VRI-2026-83921</span>
+    </div>
+
+    <div class="feed-item red">
+      <strong style="color:var(--red);">DOCUMENT VARIANCE</strong><br>
+      Submitted document differs from original fingerprint.
+      <br><span class="tag">Risk: High</span>
+    </div>
+  </section>
+
+  <section class="center">
+    <div class="center-header">
+      <div class="center-title">FRAUD & TRUST DISTRIBUTION</div>
+      <div class="stats">
+        <div class="stat"><strong style="color:var(--red);" id="fraudCount">4</strong><span>FRAUD</span></div>
+        <div class="stat"><strong style="color:var(--orange);" id="riskCount">7</strong><span>RISKS</span></div>
+        <div class="stat"><strong style="color:var(--green);" id="verifiedCount">29</strong><span>VERIFIED</span></div>
+      </div>
+    </div>
+
+    <div class="map">
+      <div class="grid"></div>
+      <div class="alert">⚠ MISMATCH DETECTED · UNDER REVIEW</div>
+
+      <div class="node one">FINANCE<br><span style="color:var(--green);">VERIFIED</span></div>
+      <div class="node two">HEALTHCARE<br><span style="color:var(--cyan);">ACTIVE</span></div>
+      <div class="node three">LEGAL<br><span style="color:var(--orange);">REVIEW</span></div>
+      <div class="node four">TECHNOLOGY<br><span style="color:var(--red);">FLAGGED</span></div>
+
+      <div class="core"><span>VRI™</span></div>
+    </div>
+  </section>
+
+  <section class="panel right">
+    <div class="panel-title">VERIFICATION ACTIVITY</div>
+
+    <div class="activity-item">
+      <strong>MORGAN CAPITAL GROUP</strong>
+      <span class="badge verified">✓ VERIFIED</span><br>
+      FINANCE · ENTERPRISE<br>
+      Trust Score: 97%
+      <div class="progress"><div class="fill green" style="width:97%;"></div></div>
+    </div>
+
+    <div class="activity-item">
+      <strong>NORTHWELL HEALTH SYS</strong>
+      <span class="badge verified">✓ VERIFIED</span><br>
+      HEALTHCARE · COMPLIANCE<br>
+      Trust Score: 91%
+      <div class="progress"><div class="fill cyan" style="width:91%;"></div></div>
+    </div>
+
+    <div class="activity-item">
+      <strong>REDACTED ID#44821</strong>
+      <span class="badge flagged">⚠ FLAGGED</span><br>
+      MISMATCH DETECTED<br>
+      Trust Score: 31%
+      <div class="progress"><div class="fill red" style="width:31%;"></div></div>
+    </div>
+
+    <div class="activity-item">
+      <strong>APEX FEDERAL BANK</strong>
+      <span class="badge verified">✓ VERIFIED</span><br>
+      BANKING · KYC VALIDATED<br>
+      Trust Score: 94%
+      <div class="progress"><div class="fill green" style="width:94%;"></div></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span>VRI™ SECURE OPERATIONS CENTER</span>
+  <span>ZERO-TRUST · FEDERATED IDENTITY · AI-ERA VERIFICATION</span>
+  <span>PAGE 2 OF 2</span>
+</footer>
+
+</div>
+
+<script>
+function updateClock() {
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+setInterval(() => {
+  const verified = document.getElementById("verifiedCount");
+  verified.textContent = Number(verified.textContent) + 1;
+}, 4500);
+
+setInterval(() => {
+  const risk = document.getElementById("riskCount");
+  risk.textContent = Number(risk.textContent) + 1;
+}, 9000);
+</script>
+</body>
+</html>
