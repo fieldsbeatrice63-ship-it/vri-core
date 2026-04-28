@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Verification Monitor</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #020818;
+  --panel: rgba(3, 12, 35, 0.86);
+  --border: rgba(0, 200, 255, 0.35);
+  --cyan: #00c8ff;
+  --blue: #1e8fff;
+  --green: #00ff99;
+  --orange: #ff9f1c;
+  --red: #ff3c3c;
+  --text: #e8f4ff;
+  --muted: #8fbfff;
+}
+
+body {
+  background: radial-gradient(circle at center, rgba(0,200,255,0.12), transparent 38%),
+              linear-gradient(135deg, #020818, #04102e, #020818);
+  color: var(--text);
+  font-family: "Courier New", monospace;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.screen {
+  width: 100vw;
+  height: 100vh;
+  padding: 22px;
+  display: grid;
+  grid-template-rows: 76px 1fr 46px;
+  gap: 14px;
+}
+
+.header,
+.footer {
+  border: 1px solid var(--border);
+  background: rgba(2, 8, 24, 0.8);
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 200, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  font-size: 42px;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 0 18px rgba(0,200,255,0.8);
+}
+
+.logo span { color: var(--cyan); }
+
+.header-title {
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: #bff3ff;
+}
+
+.header-sub {
+  margin-top: 5px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+
+.live-pill {
+  border: 1px solid var(--green);
+  color: var(--green);
+  border-radius: 999px;
+  padding: 7px 18px;
+  letter-spacing: 2px;
+  box-shadow: 0 0 14px rgba(0,255,153,0.25);
+}
+
+.status {
+  text-align: right;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: 370px 1fr 390px;
+  gap: 12px;
+  min-height: 0;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 0 24px rgba(0, 140, 255, 0.16);
+  overflow: hidden;
+}
+
+.panel-title {
+  font-size: 14px;
+  color: #bff3ff;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(0,200,255,0.22);
+  padding-bottom: 12px;
+}
+
+.feed {
+  height: calc(100% - 42px);
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.feed-item,
+.record-item {
+  border: 1px solid rgba(0,200,255,0.22);
+  background: rgba(0, 20, 50, 0.58);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.feed-item:hover,
+.record-item:hover {
+  transform: translateX(3px);
+  border-color: var(--cyan);
+}
+
+.feed-item.green,
+.record-item.green { border-left: 5px solid var(--green); }
+
+.feed-item.orange,
+.record-item.orange { border-left: 5px solid var(--orange); }
+
+.feed-item.red,
+.record-item.red { border-left: 5px solid var(--red); }
+
+.feed-title {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.feed-meta {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.center {
+  display: grid;
+  grid-template-rows: 138px 1fr 190px;
+  gap: 12px;
+  min-height: 0;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.stat-card {
+  border: 1px solid var(--border);
+  background: rgba(2, 8, 24, 0.75);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 34px;
+  margin-bottom: 6px;
+}
+
+.stat-card span {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+.core-wrap {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at center, rgba(0,200,255,0.16), transparent 32%),
+    rgba(2, 8, 24, 0.62);
+  overflow: hidden;
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,255,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,255,0.08) 1px, transparent 1px);
+  background-size: 38px 38px;
+}
+
+.vri-core {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 2px solid var(--cyan);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: pulseCore 2.4s infinite ease-in-out;
+  background: rgba(0, 30, 70, 0.72);
+}
+
+.vri-core:before,
+.vri-core:after {
+  content: "";
+  position: absolute;
+  border: 1px solid rgba(0,200,255,0.45);
+  border-radius: 50%;
+  inset: -18px;
+  animation: rotate 16s linear infinite;
+}
+
+.vri-core:after {
+  inset: -38px;
+  animation-duration: 24s;
+}
+
+.vri-core h2 {
+  font-size: 64px;
+  letter-spacing: 5px;
+  text-shadow: 0 0 18px rgba(0,200,255,0.9);
+}
+
+.vri-core p {
+  font-size: 14px;
+  color: #bff3ff;
+  margin-top: 10px;
+  letter-spacing: 2px;
+}
+
+.alert {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  border: 1px solid var(--red);
+  background: rgba(255,60,60,0.12);
+  color: #ffb1b1;
+  border-radius: 12px;
+  padding: 16px 34px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  animation: blink 1.5s infinite;
+  box-shadow: 0 0 20px rgba(255,60,60,0.25);
+}
+
+.lower {
+  display: grid;
+  grid-template-columns: 220px 1fr 250px;
+  gap: 10px;
+}
+
+.health {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.health strong {
+  color: var(--green);
+  font-size: 38px;
+}
+
+.timeline {
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline svg {
+  width: 100%;
+  height: 100%;
+}
+
+.industry-list {
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.industry-list span {
+  float: right;
+  color: var(--green);
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.badge {
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.badge.green {
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+.badge.orange {
+  color: var(--orange);
+  border: 1px solid var(--orange);
+}
+
+.badge.red {
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+
+.footer {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+@keyframes pulseCore {
+  0%,100% { box-shadow: 0 0 22px rgba(0,200,255,0.38); }
+  50% { box-shadow: 0 0 70px rgba(0,200,255,0.82); }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 3px; }
+</style>
+</head>
+
+<body>
+<div class="screen">
+
+  <header class="header">
+    <div class="brand">
+      <div class="logo">VRI<span>™</span></div>
+      <div>
+        <div class="header-title">VERIFICATION MONITOR</div>
+        <div class="header-sub">TRUST · TRANSPARENCY · TRACEABILITY</div>
+      </div>
+    </div>
+
+    <div class="live-pill">LIVE VERIFICATION SYSTEM</div>
+
+    <div class="status">
+      <div id="clock">--:--:--</div>
+      <div>SYSTEM STATUS: <span style="color:var(--green);">OPERATIONAL</span></div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <section class="panel">
+      <div class="panel-title">VERIFICATION ACTIVITY FEED</div>
+      <div class="feed" id="activityFeed"></div>
+    </section>
+
+    <section class="center">
+      <div class="stats">
+        <div class="stat-card">
+          <strong id="verifiedCount" style="color:var(--green);">0</strong>
+          <span>VERIFIED RECORDS</span>
+        </div>
+
+        <div class="stat-card">
+          <strong id="mediumCount" style="color:var(--orange);">0</strong>
+          <span>MEDIUM RISK</span>
+        </div>
+
+        <div class="stat-card">
+          <strong id="highCount" style="color:var(--red);">0</strong>
+          <span>HIGH RISK</span>
+        </div>
+
+        <div class="stat-card">
+          <strong id="totalCount" style="color:var(--cyan);">0</strong>
+          <span>TOTAL RECORDS</span>
+        </div>
+      </div>
+
+      <div class="core-wrap">
+        <div class="grid"></div>
+        <div class="vri-core">
+          <h2>VRI™</h2>
+          <p>VERIFICATION SYSTEM</p>
+          <p style="font-size:11px;">TRUSTED · SECURE · VERIFIED</p>
+        </div>
+
+        <div class="alert">⚠ RECORD INCONSISTENCY MONITOR ACTIVE</div>
+      </div>
+
+      <div class="lower">
+        <div class="panel health">
+          <div class="panel-title">SYSTEM INTEGRITY</div>
+          <strong id="healthPercent">98%</strong>
+          <span style="color:var(--muted);">SYSTEM HEALTH</span>
+        </div>
+
+        <div class="panel timeline">
+          <div class="panel-title">VERIFICATION TIMELINE</div>
+          <svg viewBox="0 0 420 120">
+            <polyline
+              points="10,92 55,65 90,50 130,75 170,62 210,34 250,55 290,28 330,44 370,18 410,30"
+              fill="none"
+              stroke="#00ff99"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
+            <path
+              d="M10 92 L55 65 L90 50 L130 75 L170 62 L210 34 L250 55 L290 28 L330 44 L370 18 L410 30 L410 110 L10 110 Z"
+              fill="rgba(0,255,153,0.18)"
+            />
+          </svg>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">ACTIVE INDUSTRIES</div>
+          <div class="industry-list" id="industryList">
+            Loading...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">PROOF RECORDS</div>
+      <div class="feed" id="recordList"></div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <span>VRI™ VERIFICATION & RECEIPT INTELLIGENCE SYSTEM</span>
+    <span>AUDIT TRAIL: ACTIVE</span>
+    <span>DATA ENCRYPTION: ENABLED</span>
+  </footer>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+function riskFromEvents(eventCount) {
+  if (eventCount >= 4) return { level: "LOW RISK", color: "green" };
+  if (eventCount >= 2) return { level: "MEDIUM RISK", color: "orange" };
+  return { level: "HIGH RISK", color: "red" };
+}
+
+function openReceipt(proofId) {
+  window.location.href = "/receipt.html?proof=" + encodeURIComponent(proofId);
+}
+
+async function loadMonitor() {
+  const activityFeed = document.getElementById("activityFeed");
+  const recordList = document.getElementById("recordList");
+  const industryList = document.getElementById("industryList");
+
+  activityFeed.innerHTML = "Loading activity...";
+  recordList.innerHTML = "Loading records...";
+  industryList.innerHTML = "Loading...";
+
+  const { data: proofs, error: proofError } = await supabaseClient
+    .from("proof_records")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  const { data: events, error: eventError } = await supabaseClient
+    .from("verification_events")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  if (proofError || eventError) {
+    activityFeed.innerHTML = "Error loading monitor data.";
+    recordList.innerHTML = "Check Supabase connection.";
+    return;
+  }
+
+  const allProofs = proofs || [];
+  const allEvents = events || [];
+
+  let low = 0, medium = 0, high = 0;
+  const industryCounts = {};
+
+  recordList.innerHTML = "";
+
+  allProofs.forEach(record => {
+    const proofEvents = allEvents.filter(e => e.proof_id === record.proof_id);
+    const risk = riskFromEvents(proofEvents.length);
+
+    if (risk.color === "green") low++;
+    if (risk.color === "orange") medium++;
+    if (risk.color === "red") high++;
+
+    const industry = record.industry || "general";
+    industryCounts[industry] = (industryCounts[industry] || 0) + 1;
+
+    const card = document.createElement("div");
+    card.className = "record-item " + risk.color;
+    card.onclick = () => openReceipt(record.proof_id);
+
+    card.innerHTML = `
+      <div class="record-header">
+        <strong>${record.proof_id}</strong>
+        <span class="badge ${risk.color}">${risk.level}</span>
+      </div>
+      <div class="feed-meta">
+        Status: ${record.status || "VERIFIED"}<br>
+        Industry: ${industry}<br>
+        Events Recorded: ${proofEvents.length}<br>
+        ${record.created_at ? new Date(record.created_at).toLocaleString() : ""}
+      </div>
+    `;
+
+    recordList.appendChild(card);
+  });
+
+  activityFeed.innerHTML = "";
+
+  allEvents.slice(0, 10).forEach(event => {
+    let color = "green";
+    if (event.event_type.includes("SENT")) color = "orange";
+    if (event.event_type.includes("MISMATCH") || event.event_type.includes("VARIANCE")) color = "red";
+
+    const item = document.createElement("div");
+    item.className = "feed-item " + color;
+    item.onclick = () => openReceipt(event.proof_id);
+
+    item.innerHTML = `
+      <div class="feed-title">${event.event_type}</div>
+      <div class="feed-meta">
+        Proof ID: ${event.proof_id}<br>
+        ${event.event_note || "Verification event recorded"}<br>
+        ${event.created_at ? new Date(event.created_at).toLocaleString() : ""}
+      </div>
+    `;
+
+    activityFeed.appendChild(item);
+  });
+
+  document.getElementById("verifiedCount").textContent = low;
+  document.getElementById("mediumCount").textContent = medium;
+  document.getElementById("highCount").textContent = high;
+  document.getElementById("totalCount").textContent = allProofs.length;
+
+  const health = allProofs.length ? Math.max(70, Math.round((low / allProofs.length) * 100)) : 98;
+  document.getElementById("healthPercent").textContent = health + "%";
+
+  industryList.innerHTML = Object.entries(industryCounts)
+    .map(([name, count]) => `${name.toUpperCase()} <span>${count}</span>`)
+    .join("<br>") || "GENERAL <span>0</span>";
+}
+
+function updateClock() {
+  document.getElementById("clock").textContent = new Date().toLocaleString();
+}
+
+updateClock();
+setInterval(updateClock, 1000);
+
+loadMonitor();
+setInterval(loadMonitor, 8000);
+</script>
+
+</body>
+</html>
