@@ -494,7 +494,8 @@ async function runVerification() {
   document.getElementById("liveCount").textContent = totalVerifications;
 
   document.getElementById("lookupResult").innerHTML =
-    "✔ Identity verified. Proof generated.";
+  "✔ Identity verified. Proof generated.<br><br>" +
+  "<button onclick='goToReceipt()' style='margin-top:8px; padding:8px; background:#1e8fff; border:none; color:white; cursor:pointer;'>VIEW RECEIPT</button>";
 }
 
 async function verifyProofRecord() {
@@ -552,6 +553,17 @@ async function nodeClick(name) {
 
   document.getElementById("lookupResult").innerHTML =
     "✔ " + name + " proof created.";
+}
+
+  function goToReceipt() {
+  const proofId = document.getElementById("proofId").textContent;
+
+  if (!proofId) {
+    alert("No proof available.");
+    return;
+  }
+
+  window.location.href = "/receipt.html?proof=" + proofId;
 }
 </script>
 </body>
