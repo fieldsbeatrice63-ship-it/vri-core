@@ -154,7 +154,9 @@ button:hover {
 
   <button onclick="createProof()">CREATE PROOF RECORD</button>
 
-  <div id="result" class="result"></div>
+<button onclick="testExternalPlugin()">TEST COMPANY PLUG-IN</button>
+
+<div id="result" class="result"></div>
 </div>
 
 <script>
@@ -421,6 +423,43 @@ async function createProofExternal(payload) {
   }
 }
 
+  async function testExternalPlugin() {
+  const resultBox = document.getElementById("result");
+
+  resultBox.className = "result";
+  resultBox.style.display = "block";
+  resultBox.innerHTML = "Testing company plug-in proof creation...";
+
+  const result = await createProofExternal({
+    sender_name: "External System",
+    sender_email: "system@connectedcompany.com",
+    sender_phone: "000-000-0000",
+    business_name: "Connected Company",
+    recipient_name: "Test Recipient",
+    recipient_email: "testrecipient@email.com",
+    recipient_phone: "",
+    document_title: "External Company Verification Test",
+    document_content: "This proof was created through the VRI company plug-in function.",
+    verification_intent: "Company Plug-In Verification",
+    industry: "enterprise"
+  });
+
+  if (result.success) {
+    lastProofId = result.proof_id;
+
+    resultBox.className = "result";
+    resultBox.innerHTML =
+      "<strong>✔ COMPANY PLUG-IN TEST SUCCESSFUL</strong><br><br>" +
+      "Proof ID: " + result.proof_id + "<br>" +
+      "Status: " + result.status + "<br>" +
+      "Business: " + result.business_name + "<br>" +
+      "Verification Intent: " + result.verification_intent + "<br><br>" +
+      "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
+  } else {
+    resultBox.className = "result error";
+    resultBox.innerHTML = "Company plug-in test failed: " + result.error;
+  }
+}
 function goToReceipt() {
   if (!lastProofId) {
     alert("No proof created yet.");
