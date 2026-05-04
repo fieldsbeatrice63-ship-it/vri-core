@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Connect</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #020818, #040d2a, #020c1e);
+  color: white;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  padding: 40px;
+}
+
+.nav {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  z-index: 999;
+  font-size: 12px;
+}
+
+.nav a {
+  color: #8fbfff;
+  margin-right: 15px;
+  text-decoration: none;
+}
+
+.container {
+  max-width: 980px;
+  margin: auto;
+  background: rgba(2, 8, 24, 0.85);
+  border: 1px solid rgba(30, 143, 255, 0.55);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 0 24px rgba(0, 140, 255, 0.25);
+}
+
+h1 {
+  margin-top: 0;
+  letter-spacing: 2px;
+}
+
+h2 {
+  margin-top: 32px;
+  color: #8fbfff;
+}
+
+.subtitle {
+  color: #8fbfff;
+  margin-bottom: 25px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.card {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid rgba(30, 143, 255, 0.45);
+  background: rgba(6, 20, 45, 0.75);
+  border-radius: 12px;
+  line-height: 1.7;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(0, 120, 255, 0.25);
+  border: 1px solid #1e8fff;
+  color: #8fbfff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  margin: 4px 4px 4px 0;
+}
+
+.flow {
+  font-family: "Courier New", monospace;
+  color: #00ff99;
+  background: rgba(0, 40, 20, 0.45);
+  border: 1px solid rgba(0, 255, 153, 0.45);
+  padding: 18px;
+  border-radius: 10px;
+  line-height: 1.8;
+}
+
+button,
+.button-link {
+  display: inline-block;
+  width: 100%;
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid #1e8fff;
+  background: rgba(0, 80, 255, 0.25);
+  color: white;
+  border-radius: 8px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(0, 140, 255, 0.45);
+  text-align: center;
+  text-decoration: none;
+}
+
+.button-link:hover {
+  background: rgba(0, 120, 255, 0.35);
+}
+
+.small {
+  color: #8fbfff;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 760px) {
+  body {
+    padding: 24px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nav {
+    position: static;
+    margin-bottom: 20px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="nav">
+  <a href="/index.html">System</a>
+  <a href="/proof-portal.html">Create Proof</a>
+  <a href="/receipt.html">Receipt</a>
+  <a href="/verification-monitor.html">Monitor</a>
+  <a href="/connect.html">Connect</a>
+</div>
+
+<div class="container">
+
+  <h1>VRI™ Connect</h1>
+
+  <div class="subtitle">
+    VRI™ Connect allows companies to plug verification, proof records, receipts, and audit trails into the systems they already use.
+    Companies do not have to replace their current platforms. VRI™ adds a proof layer on top of them.
+  </div>
+
+  <div class="card">
+    <strong>Core Positioning:</strong><br><br>
+    VRI™ is not just a portal. It is verification infrastructure. It helps companies prove who did what, when it happened,
+    what was submitted, what was verified, and what receipt or audit trail was created.
+  </div>
+
+  <h2>Who VRI™ Connect Is For</h2>
+
+  <div class="grid">
+    <div class="card">Law firms and legal document workflows</div>
+    <div class="card">Healthcare systems and patient action tracking</div>
+    <div class="card">Financial companies and transaction verification</div>
+    <div class="card">Government contractors and compliance records</div>
+    <div class="card">HR departments and employee verification</div>
+    <div class="card">AI platforms needing proof and governance</div>
+  </div>
+
+  <h2>What Companies Can Verify</h2>
+
+  <div class="card">
+    <span class="badge">People</span>
+    <span class="badge">Businesses</span>
+    <span class="badge">Documents</span>
+    <span class="badge">Emails</span>
+    <span class="badge">Phone Numbers</span>
+    <span class="badge">Payments</span>
+    <span class="badge">Messages</span>
+    <span class="badge">AI Content</span>
+    <span class="badge">Employee Actions</span>
+    <span class="badge">System Events</span>
+  </div>
+
+  <h2>Ways Companies Can Plug In</h2>
+
+  <div class="grid">
+    <div class="card">
+      <strong>1. Manual Portal Access</strong><br>
+      A company logs into VRI™ and manually creates proof records.
+    </div>
+
+    <div class="card">
+      <strong>2. Embedded Verification Form</strong><br>
+      A company places a VRI™ verification form inside its own website or dashboard.
+    </div>
+
+    <div class="card">
+      <strong>3. API Connection</strong><br>
+      A company system sends proof data directly to VRI™ automatically.
+    </div>
+
+    <div class="card">
+      <strong>4. Webhook Trigger</strong><br>
+      A company event triggers VRI™ to create a proof record, receipt, and audit trail.
+    </div>
+
+    <div class="card">
+      <strong>5. SDK / Developer Package</strong><br>
+      A developer package allows companies to install VRI™ proof functions into their own app.
+    </div>
+
+    <div class="card">
+      <strong>6. White-Label Verification Portal</strong><br>
+      A company uses a branded verification experience powered by VRI™ behind the scenes.
+    </div>
+  </div>
+
+  <h2>How the VRI™ Connection Flow Works</h2>
+
+  <div class="flow">
+    Company System<br>
+    → sends verification data to VRI™<br>
+    → VRI™ creates Proof ID<br>
+    → VRI™ stores proof record<br>
+    → VRI™ logs verification events<br>
+    → VRI™ generates receipt<br>
+    → Company receives proof status and audit trail
+  </div>
+
+  <h2>What VRI™ Creates</h2>
+
+  <div class="card">
+    Every connected proof can generate:
+    <br><br>
+    - Proof ID<br>
+    - Business Name Record<br>
+    - Verification Intent<br>
+    - Document Record<br>
+    - Recipient Record<br>
+    - Verification Events<br>
+    - Receipt Record<br>
+    - Timestamped Audit Trail<br>
+    - Monitor Activity
+  </div>
+
+  <h2>Company Plug-In Function</h2>
+
+  <div class="card">
+    VRI™ includes a company plug-in function that allows external systems to create proof records.
+    This means outside platforms can send structured verification data into VRI™ and receive a proof result.
+    <br><br>
+    This supports the long-term API model, company dashboards, connected systems, and enterprise verification workflows.
+  </div>
+
+  <h2>Security and Access Control</h2>
+
+  <div class="card">
+    Future company access will include:
+    <br><br>
+    - Company ID tracking<br>
+    - API key authentication<br>
+    - Connected system logs<br>
+    - Permission-based access<br>
+    - Proof ownership by company<br>
+    - Verification monitoring by account
+  </div>
+
+  <h2>Developer Access Coming Soon</h2>
+
+  <div class="card">
+    Developer access will allow companies to connect through:
+    <br><br>
+    - API endpoint<br>
+    - Webhook endpoint<br>
+    - JavaScript SDK<br>
+    - Embedded verification widget<br>
+    - White-label proof portal<br>
+    - Company dashboard
+  </div>
+
+  <h2>Why This Matters</h2>
+
+  <div class="card">
+    VRI™ gives companies a way to prove digital actions before trust breaks down.
+    In a world of AI-generated content, fake records, identity concerns, disputed communications, and unclear accountability,
+    VRI™ creates a receipt-backed proof layer for modern systems.
+  </div>
+
+  <h2>Enterprise Positioning</h2>
+
+  <div class="card">
+    VRI™ is designed to become a universal verification and receipt intelligence layer for legal, healthcare, finance,
+    government, HR, SaaS, and AI-powered platforms.
+    <br><br>
+    It helps companies answer one critical question:
+    <br><br>
+    <strong>Who did what, when did it happen, and what proof exists?</strong>
+  </div>
+
+  <a class="button-link" href="/proof-portal.html">CREATE A PROOF RECORD</a>
+
+  <p class="small">
+    VRI™ — Prove what is real before the world trusts it.
+  </p>
+
+</div>
+
+</body>
+</html>
