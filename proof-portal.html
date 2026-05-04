@@ -141,6 +141,10 @@ button:hover {
 
   <label>Recipient Email</label>
   <input id="recipientEmail" placeholder="Enter recipient email">
+  
+  <label>Business Name</label>
+<input type="text" id="businessName" placeholder="Enter business or organization name" />
+  
   <label>Verification Intent</label>
 <select id="verificationIntent">
   <option value="General">General</option>
@@ -191,6 +195,7 @@ async function createProof() {
     const intent = document.getElementById("verificationIntent").value || "General";
     const documentTitle = document.getElementById("documentTitle").value.trim();
     const documentContent = document.getElementById("documentContent").value.trim();
+    const businessName = document.getElementById("businessName").value.trim() || "Individual";
 
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
       throw new Error("Please fill in sender, recipient, and document content.");
