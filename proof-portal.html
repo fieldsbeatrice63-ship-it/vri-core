@@ -177,6 +177,31 @@ function cleanValue(value, fallback = "") {
   return cleaned || fallback;
 }
 
+function verifyEmailLight(email) {
+  const cleanedEmail = cleanValue(email).toLowerCase();
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!cleanedEmail) {
+    return {
+      status: "MISSING",
+      verified_at: ""
+    };
+  }
+
+  if (!emailPattern.test(cleanedEmail)) {
+    return {
+      status: "INVALID_FORMAT",
+      verified_at: new Date().toISOString()
+    };
+  }
+
+  return {
+    status: "FORMAT_VERIFIED",
+    verified_at: new Date().toISOString()
+  };
+}
+
 async function createProof() {
   const resultBox = document.getElementById("result");
 
@@ -190,53 +215,55 @@ async function createProof() {
     lastProofId = proofId;
 
     const senderName = cleanValue(document.getElementById("senderName").value);
-    const senderEmail = cleanValue(document.getElementById("senderEmail").value);
-    const senderPhone = cleanValue(document.getElementById("senderPhone").value);
-    const businessName = cleanValue(document.getElementById("businessName").value, "Individual");
-    const recipientName = cleanValue(document.getElementById("recipientName").value);
-    const recipientEmail = cleanValue(document.getElementById("recipientEmail").value);
-    const verificationIntent = cleanValue(document.getElementById("verificationIntent").value, "General");
-    const documentTitle = cleanValue(document.getElementById("documentTitle").value, "Untitled Document");
-    const documentContent = cleanValue(document.getElementById("documentContent").value);
+const senderEmail = cleanValue(document.getElementById("senderEmail").value);
+const senderPhone = cleanValue(document.getElementById("senderPhone").value);
+const businessName = cleanValue(document.getElementById("businessName").value, "Individual");
+const recipientName = cleanValue(document.getElementById("recipientName").value);
+const recipientEmail = cleanValue(document.getElementById("recipientEmail").value);
+const recipientEmailVerification = verifyEmailLight(recipientEmail);
 
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
       throw new Error("Please fill in sender name, sender email, recipient name, recipient email, and document content.");
     }
 
-    const { error: documentError } = await supabaseClient
-      .from("documents")
-      .insert([{
-        proof_id: proofId,
-        company_id: companyId,
-        document_title: documentTitle,
-        document_type: "proof_document",
-        document_content: documentContent,
-        sender_name: senderName,
-        sender_email: senderEmail,
-        sender_phone: senderPhone,
-        sender_business: businessName,
-        recipient_name: recipientName,
-        recipient_email: recipientEmail,
-        verification_intent: verificationIntent,
-        business_name: businessName,
-        status: "CREATED"
-      }]);
+   const { error: documentError } = await supabaseClient
+  .from("documents")
+  .insert([{
+    proof_id: proofId,
+    company_id: companyId,
+    document_title: documentTitle,
+    document_type: "proof_document",
+    document_content: documentContent,
+    sender_name: senderName,
+    sender_email: senderEmail,
+    sender_phone: senderPhone,
+    sender_business: businessName,
+    recipient_name: recipientName,
+    recipient_email: recipientEmail,
+    email_verification_status: recipientEmailVerification.status,
+    email_verified_at: recipientEmailVerification.verified_at,
+    verification_intent: verificationIntent,
+    business_name: businessName,
+    status: "CREATED"
+  }]);
 
     if (documentError) throw documentError;
 
-    const { error: proofError } = await supabaseClient
-      .from("proof_records")
-      .insert([{
-        proof_id: proofId,
-        company_id: companyId,
-        event_type: "created",
-        source: "internal_portal",
-        industry: "general",
-        status: "VERIFIED",
-        verification_note: "Proof portal record created",
-        verification_intent: verificationIntent,
-        business_name: businessName
-      }]);
+   const { error: proofError } = await supabaseClient
+  .from("proof_records")
+  .insert([{
+    proof_id: proofId,
+    company_id: companyId,
+    event_type: "created",
+    source: "internal_portal",
+    industry: "general",
+    status: "VERIFIED",
+    verification_note: "Proof portal record created",
+    verification_intent: verificationIntent,
+    business_name: businessName,
+    email_verification_status: recipientEmailVerification.status,
+    email_verified_at: recipientEmailVerification.verified_at
+  }]);
 
     if (proofError) throw proofError;
 
@@ -267,17 +294,18 @@ async function createProof() {
 
     if (eventError) throw eventError;
 
-    const { error: recipientError } = await supabaseClient
-      .from("recipients")
-      .insert([{
-        proof_id: proofId,
-        company_id: companyId,
-        recipient_name: recipientName,
-        recipient_email: recipientEmail,
-        recipient_phone: "",
-        delivery_status: "PENDING"
-      }]);
-
+   const { error: recipientError } = await supabaseClient
+  .from("recipients")
+  .insert([{
+    proof_id: proofId,
+    company_id: companyId,
+    recipient_name: recipientName,
+    recipient_email: recipientEmail,
+    recipient_phone: "",
+    email_verification_status: recipientEmailVerification.status,
+    email_verified_at: recipientEmailVerification.verified_at,
+    delivery_status: "PENDING"
+  }]);
     if (recipientError) throw recipientError;
 
     const { error: receiptError } = await supabaseClient
