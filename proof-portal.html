@@ -213,19 +213,21 @@ async function createProof() {
       recipient_name: recipientName,
       recipient_email: recipientEmail,
       verification_intent: intent,
+      business_name: businessName,
       status: "CREATED"
     }]);
 
     if (documentError) throw documentError;
 
-    const { error: proofError } = await supabaseClient.from("proof_records").insert([{
-      proof_id: proofId,
-      event_type: "created",
-      industry: "general",
-      status: "VERIFIED",
-      verification_note: "Proof portal record created",
-      verification_intent: intent
-    }]);
+   const { error: proofError } = await supabaseClient.from("proof_records").insert([{
+  proof_id: proofId,
+  event_type: "created",
+  industry: "general",
+  status: "VERIFIED",
+  verification_note: "Proof portal record created",
+  verification_intent: intent,
+  business_name: businessName
+}]);
 
     if (proofError) throw proofError;
 
