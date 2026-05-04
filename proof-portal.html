@@ -222,16 +222,17 @@ async function createProof() {
     if (documentError) throw documentError;
 
     const { error: proofError } = await supabaseClient
-      .from("proof_records")
-      .insert([{
-        proof_id: proofId,
-        event_type: "created",
-        industry: "general",
-        status: "VERIFIED",
-        verification_note: "Proof portal record created",
-        verification_intent: verificationIntent,
-        business_name: businessName
-      }]);
+  .from("proof_records")
+  .insert([{
+    proof_id: proofId,
+    event_type: "created",
+    source: "external_plugin",
+    industry: cleanValue(payload.industry, "general"),
+    status: "VERIFIED",
+    verification_note: "Proof record created through VRI company plug-in function",
+    verification_intent: verificationIntent,
+    business_name: businessName
+  }]);
 
     if (proofError) throw proofError;
 
