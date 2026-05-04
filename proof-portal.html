@@ -159,6 +159,7 @@ button:hover {
 <div id="result" class="result"></div>
 </div>
 
+
 <script>
 const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
@@ -185,6 +186,7 @@ async function createProof() {
 
   try {
     const proofId = "VRI-" + Date.now();
+    const companyId = "VRI_INTERNAL";
     lastProofId = proofId;
 
     const senderName = cleanValue(document.getElementById("senderName").value);
@@ -205,6 +207,7 @@ async function createProof() {
       .from("documents")
       .insert([{
         proof_id: proofId,
+        company_id: companyId,
         document_title: documentTitle,
         document_type: "proof_document",
         document_content: documentContent,
@@ -222,17 +225,18 @@ async function createProof() {
     if (documentError) throw documentError;
 
     const { error: proofError } = await supabaseClient
-  .from("proof_records")
-  .insert([{
-    proof_id: proofId,
-    event_type: "created",
-    source: "external_plugin",
-    industry: cleanValue(payload.industry, "general"),
-    status: "VERIFIED",
-    verification_note: "Proof record created through VRI company plug-in function",
-    verification_intent: verificationIntent,
-    business_name: businessName
-  }]);
+      .from("proof_records")
+      .insert([{
+        proof_id: proofId,
+        company_id: companyId,
+        event_type: "created",
+        source: "internal_portal",
+        industry: "general",
+        status: "VERIFIED",
+        verification_note: "Proof portal record created",
+        verification_intent: verificationIntent,
+        business_name: businessName
+      }]);
 
     if (proofError) throw proofError;
 
@@ -267,6 +271,7 @@ async function createProof() {
       .from("recipients")
       .insert([{
         proof_id: proofId,
+        company_id: companyId,
         recipient_name: recipientName,
         recipient_email: recipientEmail,
         recipient_phone: "",
@@ -279,6 +284,7 @@ async function createProof() {
       .from("receipts")
       .insert([{
         proof_id: proofId,
+        company_id: companyId,
         receipt_status: "GENERATED",
         receipt_note: "Receipt generated through VRI Proof Portal"
       }]);
@@ -289,13 +295,13 @@ async function createProof() {
     resultBox.innerHTML =
       "<strong>✔ PROOF RECORD CREATED</strong><br><br>" +
       "Proof ID: " + proofId + "<br>" +
+      "Company ID: " + companyId + "<br>" +
       "Status: VERIFIED<br>" +
       "Verification Intent: " + verificationIntent + "<br>" +
       "Sender: " + senderName + "<br>" +
       "Recipient: " + recipientName + "<br>" +
       "Business: " + businessName + "<br>" +
       "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
-      "Events logged: Created, Approved, Sent, Receipt Generated<br><br>" +
       "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
 
   } catch (error) {
@@ -305,14 +311,10 @@ async function createProof() {
   }
 }
 
-/*
-  VRI COMPANY PLUG-IN FUNCTION
-  This does NOT affect the Create Proof button.
-  This gives VRI a real function companies can later connect to by API/backend.
-*/
 async function createProofExternal(payload) {
   try {
     const proofId = payload.proof_id || "VRI-EXT-" + Date.now();
+    const companyId = payload.company_id || "EXT_" + Date.now();
 
     const senderName = cleanValue(payload.sender_name, "External Sender");
     const senderEmail = cleanValue(payload.sender_email, "");
@@ -332,6 +334,7 @@ async function createProofExternal(payload) {
       .from("documents")
       .insert([{
         proof_id: proofId,
+        company_id: companyId,
         document_title: documentTitle,
         document_type: "external_proof_document",
         document_content: documentContent,
@@ -352,7 +355,9 @@ async function createProofExternal(payload) {
       .from("proof_records")
       .insert([{
         proof_id: proofId,
-        event_type: "external_created",
+        company_id: companyId,
+        event_type: "created",
+        source: "external_plugin",
         industry: cleanValue(payload.industry, "general"),
         status: "VERIFIED",
         verification_note: "Proof record created through VRI company plug-in function",
@@ -388,6 +393,7 @@ async function createProofExternal(payload) {
       .from("recipients")
       .insert([{
         proof_id: proofId,
+        company_id: companyId,
         recipient_name: recipientName,
         recipient_email: recipientEmail,
         recipient_phone: cleanValue(payload.recipient_phone, ""),
@@ -400,6 +406,7 @@ async function createProofExternal(payload) {
       .from("receipts")
       .insert([{
         proof_id: proofId,
+        company_id: companyId,
         receipt_status: "GENERATED",
         receipt_note: "Receipt generated through VRI company plug-in function"
       }]);
@@ -409,6 +416,7 @@ async function createProofExternal(payload) {
     return {
       success: true,
       proof_id: proofId,
+      company_id: companyId,
       status: "VERIFIED",
       business_name: businessName,
       verification_intent: verificationIntent,
@@ -424,7 +432,7 @@ async function createProofExternal(payload) {
   }
 }
 
-  async function testExternalPlugin() {
+async function testExternalPlugin() {
   const resultBox = document.getElementById("result");
 
   resultBox.className = "result";
@@ -432,6 +440,7 @@ async function createProofExternal(payload) {
   resultBox.innerHTML = "Testing company plug-in proof creation...";
 
   const result = await createProofExternal({
+    company_id: "CONNECTED_COMPANY_DEMO",
     sender_name: "External System",
     sender_email: "system@connectedcompany.com",
     sender_phone: "000-000-0000",
@@ -452,6 +461,7 @@ async function createProofExternal(payload) {
     resultBox.innerHTML =
       "<strong>✔ COMPANY PLUG-IN TEST SUCCESSFUL</strong><br><br>" +
       "Proof ID: " + result.proof_id + "<br>" +
+      "Company ID: " + result.company_id + "<br>" +
       "Status: " + result.status + "<br>" +
       "Business: " + result.business_name + "<br>" +
       "Verification Intent: " + result.verification_intent + "<br><br>" +
@@ -461,6 +471,7 @@ async function createProofExternal(payload) {
     resultBox.innerHTML = "Company plug-in test failed: " + result.error;
   }
 }
+
 function goToReceipt() {
   if (!lastProofId) {
     alert("No proof created yet.");
@@ -470,6 +481,7 @@ function goToReceipt() {
   window.location.href = "/receipt.html?proof=" + encodeURIComponent(lastProofId);
 }
 </script>
+
 
 </body>
 </html>
