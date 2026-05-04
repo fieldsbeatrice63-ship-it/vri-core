@@ -49,7 +49,8 @@ label {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   margin-top: 6px;
   padding: 12px;
@@ -140,6 +141,14 @@ button:hover {
 
   <label>Recipient Email</label>
   <input id="recipientEmail" placeholder="Enter recipient email">
+  <label>Verification Intent</label>
+<select id="verificationIntent">
+  <option value="General">General</option>
+  <option value="Legal Proof">Legal Proof</option>
+  <option value="Business Transaction">Business Transaction</option>
+  <option value="Internal Audit">Internal Audit</option>
+  <option value="Identity Confirmation">Identity Confirmation</option>
+</select>
 
   <label>Document Title</label>
   <input id="documentTitle" placeholder="Enter document title">
