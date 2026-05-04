@@ -101,6 +101,32 @@ button:hover {
   background: rgba(80, 0, 0, 0.45);
   color: #ff6b6b;
 }
+  .badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 6px;
+}
+
+.badge-green {
+  background: rgba(0, 255, 153, 0.15);
+  color: #00ff99;
+  border: 1px solid #00ff99;
+}
+
+.badge-yellow {
+  background: rgba(255, 200, 0, 0.15);
+  color: #ffcc00;
+  border: 1px solid #ffcc00;
+}
+
+.badge-red {
+  background: rgba(255, 60, 60, 0.15);
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+}
 </style>
 </head>
 
@@ -209,6 +235,16 @@ function verifyPhoneLight(phone) {
   return { status: "FORMAT_VERIFIED", verified_at: new Date().toISOString() };
 }
 
+  function getBadge(status) {
+  if (status === "FORMAT_VERIFIED") {
+    return "<span class='badge badge-green'>✔ VERIFIED</span>";
+  }
+  if (status === "INVALID_FORMAT") {
+    return "<span class='badge badge-yellow'>⚠ INVALID</span>";
+  }
+  return "<span class='badge badge-red'>✖ MISSING</span>";
+}
+  
 async function createProof() {
   const resultBox = document.getElementById("result");
 
@@ -233,6 +269,7 @@ async function createProof() {
 
     const recipientEmailVerification = verifyEmailLight(recipientEmail);
     const senderPhoneVerification = verifyPhoneLight(senderPhone);
+    
 
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
       throw new Error("Please fill in sender name, sender email, recipient name, recipient email, and document content.");
@@ -365,20 +402,20 @@ async function createProof() {
     if (receiptError) throw receiptError;
 
     resultBox.className = "result";
-    resultBox.innerHTML =
-      "<strong>✔ VERIFIED PROOF RECORD CREATED</strong><br><br>" +
-      "Proof ID: " + proofId + "<br>" +
-      "Company ID: " + companyId + "<br>" +
-      "Status: VERIFIED<br>" +
-      "Verification Intent: " + verificationIntent + "<br>" +
-      "Email Verification: " + recipientEmailVerification.status + "<br>" +
-      "Phone Verification: " + senderPhoneVerification.status + "<br>" +
-      "Sender: " + senderName + "<br>" +
-      "Recipient: " + recipientName + "<br>" +
-      "Business: " + businessName + "<br>" +
-      "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
-      "Events logged: Created, Email Verified, Phone Verified, Approved, Sent, Receipt Generated<br><br>" +
-      "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
+resultBox.innerHTML =
+  "<strong>✔ VERIFIED PROOF RECORD CREATED</strong><br><br>" +
+  "Proof ID: " + proofId + "<br>" +
+  "Company ID: " + companyId + "<br>" +
+  "Status: VERIFIED<br>" +
+  "Verification Intent: " + verificationIntent + "<br>" +
+  "Email Verification: " + getBadge(recipientEmailVerification.status) + "<br>" +
+  "Phone Verification: " + getBadge(senderPhoneVerification.status) + "<br>" +
+  "Business Verification: " + businessName + " <span class='badge badge-green'>✔ CAPTURED</span><br>" +
+  "Sender: " + senderName + "<br>" +
+  "Recipient: " + recipientName + "<br>" +
+  "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
+  "Events logged: Created, Email Verified, Phone Verified, Business Captured, Approved, Sent, Receipt Generated<br><br>" +
+  "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
 
   } catch (error) {
     console.error("VRI Proof Portal Error:", error);
@@ -578,18 +615,19 @@ async function testExternalPlugin() {
   if (result.success) {
     lastProofId = result.proof_id;
 
-    resultBox.className = "result";
-    resultBox.innerHTML =
-      "<strong>✔ EXTERNAL VERIFIED PROOF CREATED</strong><br><br>" +
-      "Proof ID: " + result.proof_id + "<br>" +
-      "Company ID: " + result.company_id + "<br>" +
-      "Status: " + result.status + "<br>" +
-      "Business: " + result.business_name + "<br>" +
-      "Verification Intent: " + result.verification_intent + "<br>" +
-      "Email Verification: " + result.email_verification_status + "<br>" +
-      "Phone Verification: " + result.phone_verification_status + "<br><br>" +
-      "Events logged: External Created, Email Verified, Phone Verified, Company Verified, Receipt Generated<br><br>" +
-      "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
+   resultBox.className = "result";
+resultBox.innerHTML =
+  "<strong>✔ EXTERNAL VERIFIED PROOF CREATED</strong><br><br>" +
+  "Proof ID: " + result.proof_id + "<br>" +
+  "Company ID: " + result.company_id + "<br>" +
+  "Status: " + result.status + "<br>" +
+  "Verification Intent: " + result.verification_intent + "<br>" +
+  "Email Verification: " + getBadge(result.email_verification_status) + "<br>" +
+  "Phone Verification: " + getBadge(result.phone_verification_status) + "<br>" +
+  "Business Verification: " + result.business_name + " <span class='badge badge-green'>✔ CAPTURED</span><br><br>" +
+  "Events logged: External Created, Email Verified, Phone Verified, Business Captured, Company Verified, Receipt Generated<br><br>" +
+  "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
+    
   } else {
     resultBox.className = "result error";
     resultBox.innerHTML = "Company plug-in test failed: " + result.error;
