@@ -133,8 +133,8 @@ button:hover {
   <label>Sender Phone</label>
   <input id="senderPhone" placeholder="Enter sender phone">
 
-  <label>Business Name</label>
-  <input id="businessName" placeholder="Enter business name">
+ <label>Business Name</label>
+<input type="text" id="businessName" placeholder="Enter business or organization name" />
 
   <label>Recipient Name</label>
   <input id="recipientName" placeholder="Enter recipient name">
@@ -142,8 +142,7 @@ button:hover {
   <label>Recipient Email</label>
   <input id="recipientEmail" placeholder="Enter recipient email">
   
-  <label>Business Name</label>
-<input type="text" id="businessName" placeholder="Enter business or organization name" />
+ 
   
   <label>Verification Intent</label>
 <select id="verificationIntent">
@@ -189,13 +188,13 @@ async function createProof() {
     const senderName = document.getElementById("senderName").value.trim();
     const senderEmail = document.getElementById("senderEmail").value.trim();
     const senderPhone = document.getElementById("senderPhone").value.trim();
-    const businessName = document.getElementById("businessName").value.trim();
+    const businessName = document.getElementById("businessName").value.trim() || "Individual";
     const recipientName = document.getElementById("recipientName").value.trim();
     const recipientEmail = document.getElementById("recipientEmail").value.trim();
     const intent = document.getElementById("verificationIntent").value || "General";
     const documentTitle = document.getElementById("documentTitle").value.trim();
     const documentContent = document.getElementById("documentContent").value.trim();
-    const businessName = document.getElementById("businessName").value.trim() || "Individual";
+   
 
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
       throw new Error("Please fill in sender, recipient, and document content.");
