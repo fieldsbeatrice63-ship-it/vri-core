@@ -212,17 +212,16 @@ async function createProof() {
       }]);
 
     if (documentError) throw documentError;
-
-    const { error: proofError } = await supabaseClient
-      .from("proof_records")
-      .insert([{
-        proof_id: proofId,
-        event_type: "created",
-        industry: "general",
-        status: "VERIFIED",
-        verification_note: "Proof portal record created"
-        verification_intent: intent,
-      }]);
+const { error: proofError } = await supabaseClient
+  .from("proof_records")
+  .insert([{
+    proof_id: proofId,
+    event_type: "created",
+    industry: "general",
+    status: "VERIFIED",
+    verification_note: "Proof portal record created",
+    verification_intent: intent
+  }]);
 
     if (proofError) throw proofError;
 
