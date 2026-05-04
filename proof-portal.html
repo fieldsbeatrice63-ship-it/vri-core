@@ -106,16 +106,11 @@ button:hover {
 
 <body>
 
-  <div style="position:absolute; top:15px; right:20px; z-index:999; font-size:12px;">
-
+<div style="position:absolute; top:15px; right:20px; z-index:999; font-size:12px;">
   <a href="/index.html" style="color:#8fbfff; margin-right:15px;">System</a>
-
   <a href="/proof-portal.html" style="color:#8fbfff; margin-right:15px;">Create Proof</a>
-
   <a href="/receipt.html" style="color:#8fbfff; margin-right:15px;">Receipt</a>
-
   <a href="/verification-monitor.html" style="color:#8fbfff;">Monitor</a>
-
 </div>
 
 <div class="container">
@@ -133,25 +128,23 @@ button:hover {
   <label>Sender Phone</label>
   <input id="senderPhone" placeholder="Enter sender phone">
 
- <label>Business Name</label>
-<input type="text" id="businessName" placeholder="Enter business or organization name" />
+  <label>Business Name</label>
+  <input type="text" id="businessName" placeholder="Enter business or organization name" />
 
   <label>Recipient Name</label>
   <input id="recipientName" placeholder="Enter recipient name">
 
   <label>Recipient Email</label>
   <input id="recipientEmail" placeholder="Enter recipient email">
-  
- 
-  
+
   <label>Verification Intent</label>
-<select id="verificationIntent">
-  <option value="General">General</option>
-  <option value="Legal Proof">Legal Proof</option>
-  <option value="Business Transaction">Business Transaction</option>
-  <option value="Internal Audit">Internal Audit</option>
-  <option value="Identity Confirmation">Identity Confirmation</option>
-</select>
+  <select id="verificationIntent">
+    <option value="General">General</option>
+    <option value="Legal Proof">Legal Proof</option>
+    <option value="Business Transaction">Business Transaction</option>
+    <option value="Internal Audit">Internal Audit</option>
+    <option value="Identity Confirmation">Identity Confirmation</option>
+  </select>
 
   <label>Document Title</label>
   <input id="documentTitle" placeholder="Enter document title">
@@ -175,8 +168,15 @@ const supabaseClient = window.supabase.createClient(
 
 let lastProofId = "";
 
+function cleanValue(value, fallback = "") {
+  if (value === null || value === undefined) return fallback;
+  const cleaned = String(value).trim();
+  return cleaned || fallback;
+}
+
 async function createProof() {
   const resultBox = document.getElementById("result");
+
   resultBox.className = "result";
   resultBox.style.display = "block";
   resultBox.innerHTML = "Creating proof record...";
@@ -185,86 +185,112 @@ async function createProof() {
     const proofId = "VRI-" + Date.now();
     lastProofId = proofId;
 
-    const senderName = document.getElementById("senderName").value.trim();
-    const senderEmail = document.getElementById("senderEmail").value.trim();
-    const senderPhone = document.getElementById("senderPhone").value.trim();
-    const businessName = document.getElementById("businessName").value.trim() || "Individual";
-    const recipientName = document.getElementById("recipientName").value.trim();
-    const recipientEmail = document.getElementById("recipientEmail").value.trim();
-    const intent = document.getElementById("verificationIntent").value || "General";
-    const documentTitle = document.getElementById("documentTitle").value.trim();
-    const documentContent = document.getElementById("documentContent").value.trim();
-   
+    const senderName = cleanValue(document.getElementById("senderName").value);
+    const senderEmail = cleanValue(document.getElementById("senderEmail").value);
+    const senderPhone = cleanValue(document.getElementById("senderPhone").value);
+    const businessName = cleanValue(document.getElementById("businessName").value, "Individual");
+    const recipientName = cleanValue(document.getElementById("recipientName").value);
+    const recipientEmail = cleanValue(document.getElementById("recipientEmail").value);
+    const verificationIntent = cleanValue(document.getElementById("verificationIntent").value, "General");
+    const documentTitle = cleanValue(document.getElementById("documentTitle").value, "Untitled Document");
+    const documentContent = cleanValue(document.getElementById("documentContent").value);
 
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
-      throw new Error("Please fill in sender, recipient, and document content.");
+      throw new Error("Please fill in sender name, sender email, recipient name, recipient email, and document content.");
     }
 
-    const { error: documentError } = await supabaseClient.from("documents").insert([{
-      proof_id: proofId,
-      document_title: documentTitle || "Untitled Document",
-      document_type: "proof_document",
-      document_content: documentContent,
-      sender_name: senderName,
-      sender_email: senderEmail,
-      sender_phone: senderPhone,
-      sender_business: businessName,
-      recipient_name: recipientName,
-      recipient_email: recipientEmail,
-      verification_intent: intent,
-      business_name: businessName,
-      status: "CREATED"
-    }]);
+    const { error: documentError } = await supabaseClient
+      .from("documents")
+      .insert([{
+        proof_id: proofId,
+        document_title: documentTitle,
+        document_type: "proof_document",
+        document_content: documentContent,
+        sender_name: senderName,
+        sender_email: senderEmail,
+        sender_phone: senderPhone,
+        sender_business: businessName,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail,
+        verification_intent: verificationIntent,
+        business_name: businessName,
+        status: "CREATED"
+      }]);
 
     if (documentError) throw documentError;
 
-   const { error: proofError } = await supabaseClient.from("proof_records").insert([{
-  proof_id: proofId,
-  event_type: "created",
-  industry: "general",
-  status: "VERIFIED",
-  verification_note: "Proof portal record created",
-  verification_intent: intent,
-  business_name: businessName
-}]);
+    const { error: proofError } = await supabaseClient
+      .from("proof_records")
+      .insert([{
+        proof_id: proofId,
+        event_type: "created",
+        industry: "general",
+        status: "VERIFIED",
+        verification_note: "Proof portal record created",
+        verification_intent: verificationIntent,
+        business_name: businessName
+      }]);
 
     if (proofError) throw proofError;
 
-    const { error: eventError } = await supabaseClient.from("verification_events").insert([
-      { proof_id: proofId, event_type: "DOCUMENT_CREATED", event_note: "Intent: " + intent },
-      { proof_id: proofId, event_type: "DOCUMENT_APPROVED", event_note: "Document approved for receipt generation" },
-      { proof_id: proofId, event_type: "DOCUMENT_SENT", event_note: "Recipient attached to proof workflow" },
-      { proof_id: proofId, event_type: "RECEIPT_GENERATED", event_note: "Proof receipt generated" }
-    ]);
+    const { error: eventError } = await supabaseClient
+      .from("verification_events")
+      .insert([
+        {
+          proof_id: proofId,
+          event_type: "DOCUMENT_CREATED",
+          event_note: "Intent: " + verificationIntent + " | Business: " + businessName
+        },
+        {
+          proof_id: proofId,
+          event_type: "DOCUMENT_APPROVED",
+          event_note: "Document approved for receipt generation"
+        },
+        {
+          proof_id: proofId,
+          event_type: "DOCUMENT_SENT",
+          event_note: "Recipient attached to proof workflow"
+        },
+        {
+          proof_id: proofId,
+          event_type: "RECEIPT_GENERATED",
+          event_note: "Proof receipt generated"
+        }
+      ]);
 
     if (eventError) throw eventError;
 
-    const { error: recipientError } = await supabaseClient.from("recipients").insert([{
-      proof_id: proofId,
-      recipient_name: recipientName,
-      recipient_email: recipientEmail,
-      recipient_phone: "",
-      delivery_status: "PENDING"
-    }]);
+    const { error: recipientError } = await supabaseClient
+      .from("recipients")
+      .insert([{
+        proof_id: proofId,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail,
+        recipient_phone: "",
+        delivery_status: "PENDING"
+      }]);
 
     if (recipientError) throw recipientError;
 
-    const { error: receiptError } = await supabaseClient.from("receipts").insert([{
-      proof_id: proofId,
-      receipt_status: "GENERATED",
-      receipt_note: "Receipt generated through VRI Proof Portal"
-    }]);
+    const { error: receiptError } = await supabaseClient
+      .from("receipts")
+      .insert([{
+        proof_id: proofId,
+        receipt_status: "GENERATED",
+        receipt_note: "Receipt generated through VRI Proof Portal"
+      }]);
 
     if (receiptError) throw receiptError;
 
+    resultBox.className = "result";
     resultBox.innerHTML =
       "<strong>✔ PROOF RECORD CREATED</strong><br><br>" +
       "Proof ID: " + proofId + "<br>" +
       "Status: VERIFIED<br>" +
-      "Verification Intent: " + intent + "<br>" +
+      "Verification Intent: " + verificationIntent + "<br>" +
       "Sender: " + senderName + "<br>" +
       "Recipient: " + recipientName + "<br>" +
-      "Business: " + (businessName || "N/A") + "<br>" +
+      "Business: " + businessName + "<br>" +
       "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
       "Events logged: Created, Approved, Sent, Receipt Generated<br><br>" +
       "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
@@ -273,6 +299,125 @@ async function createProof() {
     console.error("VRI Proof Portal Error:", error);
     resultBox.className = "result error";
     resultBox.innerHTML = "Error: " + error.message;
+  }
+}
+
+/*
+  VRI COMPANY PLUG-IN FUNCTION
+  This does NOT affect the Create Proof button.
+  This gives VRI a real function companies can later connect to by API/backend.
+*/
+async function createProofExternal(payload) {
+  try {
+    const proofId = payload.proof_id || "VRI-EXT-" + Date.now();
+
+    const senderName = cleanValue(payload.sender_name, "External Sender");
+    const senderEmail = cleanValue(payload.sender_email, "");
+    const senderPhone = cleanValue(payload.sender_phone, "");
+    const businessName = cleanValue(payload.business_name, "External Company");
+    const recipientName = cleanValue(payload.recipient_name, "External Recipient");
+    const recipientEmail = cleanValue(payload.recipient_email, "");
+    const verificationIntent = cleanValue(payload.verification_intent, "Company Plug-In Verification");
+    const documentTitle = cleanValue(payload.document_title, "External Proof Document");
+    const documentContent = cleanValue(payload.document_content, "Proof created through external company plug-in.");
+
+    if (!senderEmail || !recipientEmail) {
+      throw new Error("External proof requires sender_email and recipient_email.");
+    }
+
+    const { error: documentError } = await supabaseClient
+      .from("documents")
+      .insert([{
+        proof_id: proofId,
+        document_title: documentTitle,
+        document_type: "external_proof_document",
+        document_content: documentContent,
+        sender_name: senderName,
+        sender_email: senderEmail,
+        sender_phone: senderPhone,
+        sender_business: businessName,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail,
+        verification_intent: verificationIntent,
+        business_name: businessName,
+        status: "CREATED"
+      }]);
+
+    if (documentError) throw documentError;
+
+    const { error: proofError } = await supabaseClient
+      .from("proof_records")
+      .insert([{
+        proof_id: proofId,
+        event_type: "external_created",
+        industry: cleanValue(payload.industry, "general"),
+        status: "VERIFIED",
+        verification_note: "Proof record created through VRI company plug-in function",
+        verification_intent: verificationIntent,
+        business_name: businessName
+      }]);
+
+    if (proofError) throw proofError;
+
+    const { error: eventError } = await supabaseClient
+      .from("verification_events")
+      .insert([
+        {
+          proof_id: proofId,
+          event_type: "EXTERNAL_PROOF_CREATED",
+          event_note: "External company plug-in created proof"
+        },
+        {
+          proof_id: proofId,
+          event_type: "COMPANY_PLUGIN_VERIFIED",
+          event_note: "Business: " + businessName + " | Intent: " + verificationIntent
+        },
+        {
+          proof_id: proofId,
+          event_type: "RECEIPT_GENERATED",
+          event_note: "Receipt generated for external proof"
+        }
+      ]);
+
+    if (eventError) throw eventError;
+
+    const { error: recipientError } = await supabaseClient
+      .from("recipients")
+      .insert([{
+        proof_id: proofId,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail,
+        recipient_phone: cleanValue(payload.recipient_phone, ""),
+        delivery_status: "PENDING"
+      }]);
+
+    if (recipientError) throw recipientError;
+
+    const { error: receiptError } = await supabaseClient
+      .from("receipts")
+      .insert([{
+        proof_id: proofId,
+        receipt_status: "GENERATED",
+        receipt_note: "Receipt generated through VRI company plug-in function"
+      }]);
+
+    if (receiptError) throw receiptError;
+
+    return {
+      success: true,
+      proof_id: proofId,
+      status: "VERIFIED",
+      business_name: businessName,
+      verification_intent: verificationIntent,
+      message: "External company proof created successfully."
+    };
+
+  } catch (error) {
+    console.error("VRI External Plug-In Error:", error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
@@ -285,7 +430,6 @@ function goToReceipt() {
   window.location.href = "/receipt.html?proof=" + encodeURIComponent(lastProofId);
 }
 </script>
-
 
 </body>
 </html>
