@@ -170,6 +170,8 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
+let lastProofId = "";
+
 async function createProof() {
   const resultBox = document.getElementById("result");
   resultBox.className = "result";
@@ -178,99 +180,74 @@ async function createProof() {
 
   try {
     const proofId = "VRI-" + Date.now();
+    lastProofId = proofId;
 
     const senderName = document.getElementById("senderName").value.trim();
     const senderEmail = document.getElementById("senderEmail").value.trim();
     const senderPhone = document.getElementById("senderPhone").value.trim();
     const businessName = document.getElementById("businessName").value.trim();
-
     const recipientName = document.getElementById("recipientName").value.trim();
     const recipientEmail = document.getElementById("recipientEmail").value.trim();
-
+    const intent = document.getElementById("verificationIntent").value || "General";
     const documentTitle = document.getElementById("documentTitle").value.trim();
     const documentContent = document.getElementById("documentContent").value.trim();
-    const intent = document.getElementById("verificationIntent")?.value || "General";
 
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
       throw new Error("Please fill in sender, recipient, and document content.");
     }
 
-    const { error: documentError } = await supabaseClient
-      .from("documents")
-      .insert([{
-        proof_id: proofId,
-        document_title: documentTitle || "Untitled Document",
-        document_type: "proof_document",
-        document_content: documentContent,
-        sender_name: senderName,
-        sender_email: senderEmail,
-        sender_phone: senderPhone,
-        sender_business: businessName,
-        recipient_name: recipientName,
-        recipient_email: recipientEmail,
-        status: "CREATED"
-      }]);
+    const { error: documentError } = await supabaseClient.from("documents").insert([{
+      proof_id: proofId,
+      document_title: documentTitle || "Untitled Document",
+      document_type: "proof_document",
+      document_content: documentContent,
+      sender_name: senderName,
+      sender_email: senderEmail,
+      sender_phone: senderPhone,
+      sender_business: businessName,
+      recipient_name: recipientName,
+      recipient_email: recipientEmail,
+      verification_intent: intent,
+      status: "CREATED"
+    }]);
 
     if (documentError) throw documentError;
-const { error: proofError } = await supabaseClient
-  .from("proof_records")
-  .insert([{
-    proof_id: proofId,
-    event_type: "created",
-    industry: "general",
-    status: "VERIFIED",
-    verification_note: "Proof portal record created",
-    verification_intent: intent
-  }]);
+
+    const { error: proofError } = await supabaseClient.from("proof_records").insert([{
+      proof_id: proofId,
+      event_type: "created",
+      industry: "general",
+      status: "VERIFIED",
+      verification_note: "Proof portal record created",
+      verification_intent: intent
+    }]);
 
     if (proofError) throw proofError;
 
-    const { error: eventError } = await supabaseClient
-      .from("verification_events")
-      .insert([
-        {
-          proof_id: proofId,
-          event_type: "DOCUMENT_CREATED",
-          event_note: "Document proof record created"
-        },
-        {
-          proof_id: proofId,
-          event_type: "DOCUMENT_APPROVED",
-          event_note: "Document proof record approved for receipt generation"
-        },
-        {
-          proof_id: proofId,
-          event_type: "DOCUMENT_SENT",
-          event_note: "Recipient attached to proof workflow"
-        },
-        {
-          proof_id: proofId,
-          event_type: "RECEIPT_GENERATED",
-          event_note: "Proof receipt generated"
-        }
-      ]);
+    const { error: eventError } = await supabaseClient.from("verification_events").insert([
+      { proof_id: proofId, event_type: "DOCUMENT_CREATED", event_note: "Intent: " + intent },
+      { proof_id: proofId, event_type: "DOCUMENT_APPROVED", event_note: "Document approved for receipt generation" },
+      { proof_id: proofId, event_type: "DOCUMENT_SENT", event_note: "Recipient attached to proof workflow" },
+      { proof_id: proofId, event_type: "RECEIPT_GENERATED", event_note: "Proof receipt generated" }
+    ]);
 
     if (eventError) throw eventError;
 
-    const { error: recipientError } = await supabaseClient
-      .from("recipients")
-      .insert([{
-        proof_id: proofId,
-        recipient_name: recipientName,
-        recipient_email: recipientEmail,
-        recipient_phone: "",
-        delivery_status: "PENDING"
-      }]);
+    const { error: recipientError } = await supabaseClient.from("recipients").insert([{
+      proof_id: proofId,
+      recipient_name: recipientName,
+      recipient_email: recipientEmail,
+      recipient_phone: "",
+      delivery_status: "PENDING"
+    }]);
 
     if (recipientError) throw recipientError;
 
-    const { error: receiptError } = await supabaseClient
-      .from("receipts")
-      .insert([{
-        proof_id: proofId,
-        receipt_status: "GENERATED",
-        receipt_note: "Receipt generated through VRI Proof Portal"
-      }]);
+    const { error: receiptError } = await supabaseClient.from("receipts").insert([{
+      proof_id: proofId,
+      receipt_status: "GENERATED",
+      receipt_note: "Receipt generated through VRI Proof Portal"
+    }]);
 
     if (receiptError) throw receiptError;
 
@@ -278,11 +255,13 @@ const { error: proofError } = await supabaseClient
       "<strong>✔ PROOF RECORD CREATED</strong><br><br>" +
       "Proof ID: " + proofId + "<br>" +
       "Status: VERIFIED<br>" +
+      "Verification Intent: " + intent + "<br>" +
       "Sender: " + senderName + "<br>" +
       "Recipient: " + recipientName + "<br>" +
       "Business: " + (businessName || "N/A") + "<br>" +
       "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
-      "Events logged: Created, Approved, Sent, Receipt Generated";
+      "Events logged: Created, Approved, Sent, Receipt Generated<br><br>" +
+      "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
 
   } catch (error) {
     console.error("VRI Proof Portal Error:", error);
@@ -290,7 +269,17 @@ const { error: proofError } = await supabaseClient
     resultBox.innerHTML = "Error: " + error.message;
   }
 }
+
+function goToReceipt() {
+  if (!lastProofId) {
+    alert("No proof created yet.");
+    return;
+  }
+
+  window.location.href = "/receipt.html?proof=" + encodeURIComponent(lastProofId);
+}
 </script>
+
 
 </body>
 </html>
