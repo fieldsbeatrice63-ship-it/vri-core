@@ -597,17 +597,26 @@ async function testExternalPlugin() {
   resultBox.style.display = "block";
   resultBox.innerHTML = "Creating external verified proof...";
 
+  const senderName = cleanValue(document.getElementById("senderName").value, "External System");
+  const senderEmail = cleanValue(document.getElementById("senderEmail").value, "system@connectedcompany.com");
+  const senderPhone = cleanValue(document.getElementById("senderPhone").value);
+  const businessName = cleanValue(document.getElementById("businessName").value, "Connected Company");
+  const recipientName = cleanValue(document.getElementById("recipientName").value, "Test Recipient");
+  const recipientEmail = cleanValue(document.getElementById("recipientEmail").value);
+  const documentTitle = cleanValue(document.getElementById("documentTitle").value, "External Company Verification Proof");
+  const documentContent = cleanValue(document.getElementById("documentContent").value, "External proof test.");
+
   const result = await createProofExternal({
     company_id: "CONNECTED_COMPANY_DEMO",
-    sender_name: "External System",
-    sender_email: "system@connectedcompany.com",
-    sender_phone: "1234567890",
-    business_name: "Connected Company",
-    recipient_name: "Test Recipient",
-    recipient_email: "testrecipient@email.com",
+    sender_name: senderName,
+    sender_email: senderEmail,
+    sender_phone: senderPhone,
+    business_name: businessName,
+    recipient_name: recipientName,
+    recipient_email: recipientEmail,
     recipient_phone: "",
-    document_title: "External Company Verification Proof",
-    document_content: "This verified proof was created through a connected external company system.",
+    document_title: documentTitle,
+    document_content: documentContent,
     verification_intent: "External Verification",
     industry: "enterprise"
   });
@@ -615,19 +624,18 @@ async function testExternalPlugin() {
   if (result.success) {
     lastProofId = result.proof_id;
 
-   resultBox.className = "result";
-resultBox.innerHTML =
-  "<strong>✔ EXTERNAL VERIFIED PROOF CREATED</strong><br><br>" +
-  "Proof ID: " + result.proof_id + "<br>" +
-  "Company ID: " + result.company_id + "<br>" +
-  "Status: " + result.status + "<br>" +
-  "Verification Intent: " + result.verification_intent + "<br>" +
-  "Email Verification: " + getBadge(result.email_verification_status) + "<br>" +
-  "Phone Verification: " + getBadge(result.phone_verification_status) + "<br>" +
-  "Business Verification: " + result.business_name + " <span class='badge badge-green'>✔ CAPTURED</span><br><br>" +
-  "Events logged: External Created, Email Verified, Phone Verified, Business Captured, Company Verified, Receipt Generated<br><br>" +
-  "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
-    
+    resultBox.className = "result";
+    resultBox.innerHTML =
+      "<strong>✔ EXTERNAL VERIFIED PROOF CREATED</strong><br><br>" +
+      "Proof ID: " + result.proof_id + "<br>" +
+      "Company ID: " + result.company_id + "<br>" +
+      "Status: " + result.status + "<br>" +
+      "Verification Intent: " + result.verification_intent + "<br>" +
+      "Email Verification: " + getBadge(result.email_verification_status) + "<br>" +
+      "Phone Verification: " + getBadge(result.phone_verification_status) + "<br>" +
+      "Business Verification: " + result.business_name + " <span class='badge badge-green'>✔ CAPTURED</span><br><br>" +
+      "Events logged: External Created, Email Checked, Phone Checked, Business Captured, Company Verified, Receipt Generated<br><br>" +
+      "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
   } else {
     resultBox.className = "result error";
     resultBox.innerHTML = "Company plug-in test failed: " + result.error;
