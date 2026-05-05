@@ -429,10 +429,10 @@ resultBox.innerHTML =
   "Events logged: Created, Email Verified, Phone Verified, Business Captured, Approved, Sent, Receipt Generated<br><br>" +
   "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
     
-    "HALO Status: " + getHaloStatus(
+   "HALO Status: " + getHaloStatus(
   recipientEmailVerification.status,
   senderPhoneVerification.status
-) + "<br>" +
+) + "<br>" + 
 
   } catch (error) {
     console.error("VRI Proof Portal Error:", error);
@@ -638,10 +638,7 @@ async function testExternalPlugin() {
     industry: "enterprise"
   });
 
-  "HALO Status: " + getHaloStatus(
-  result.email_verification_status,
-  result.phone_verification_status
-) + "<br>" +
+ 
 
   if (result.success) {
     lastProofId = result.proof_id;
@@ -663,6 +660,10 @@ async function testExternalPlugin() {
     resultBox.innerHTML = "Company plug-in test failed: " + result.error;
   }
 }
+   "HALO Status: " + getHaloStatus(
+  result.email_verification_status,
+  result.phone_verification_status
+) + "<br>" +
 
 function goToReceipt() {
   if (!lastProofId) {
