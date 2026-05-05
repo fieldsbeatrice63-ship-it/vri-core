@@ -244,6 +244,18 @@ function verifyPhoneLight(phone) {
   }
   return "<span class='badge badge-red'>✖ MISSING</span>";
 }
+
+  function getHaloStatus(emailStatus, phoneStatus) {
+  if (emailStatus === "FORMAT_VERIFIED" && phoneStatus === "FORMAT_VERIFIED") {
+    return "<span class='badge badge-green'>🟢 GOVERNED</span>";
+  }
+
+  if (emailStatus === "MISSING" || phoneStatus === "MISSING") {
+    return "<span class='badge badge-red'>🔴 RISK</span>";
+  }
+
+  return "<span class='badge badge-yellow'>🟡 REVIEW</span>";
+}
   
 async function createProof() {
   const resultBox = document.getElementById("result");
@@ -416,6 +428,11 @@ resultBox.innerHTML =
   "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
   "Events logged: Created, Email Verified, Phone Verified, Business Captured, Approved, Sent, Receipt Generated<br><br>" +
   "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
+    
+    "HALO Status: " + getHaloStatus(
+  recipientEmailVerification.status,
+  senderPhoneVerification.status
+) + "<br>" +
 
   } catch (error) {
     console.error("VRI Proof Portal Error:", error);
@@ -620,6 +637,11 @@ async function testExternalPlugin() {
     verification_intent: "External Verification",
     industry: "enterprise"
   });
+
+  "HALO Status: " + getHaloStatus(
+  result.email_verification_status,
+  result.phone_verification_status
+) + "<br>" +
 
   if (result.success) {
     lastProofId = result.proof_id;
