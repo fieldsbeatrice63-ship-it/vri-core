@@ -209,10 +209,7 @@ function verifyEmailLight(email) {
   const cleanedEmail = cleanValue(email).toLowerCase();
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (!cleanedEmail) {
-    return { status: "MISSING", verified_at: "" };
-  }
-
+  if (!cleanedEmail) return { status: "MISSING", verified_at: "" };
   if (!emailPattern.test(cleanedEmail)) {
     return { status: "INVALID_FORMAT", verified_at: new Date().toISOString() };
   }
@@ -224,10 +221,7 @@ function verifyPhoneLight(phone) {
   const cleanedPhone = cleanValue(phone);
   const digitsOnly = cleanedPhone.replace(/\D/g, "");
 
-  if (!cleanedPhone) {
-    return { status: "MISSING", verified_at: "" };
-  }
-
+  if (!cleanedPhone) return { status: "MISSING", verified_at: "" };
   if (digitsOnly.length < 10) {
     return { status: "INVALID_FORMAT", verified_at: new Date().toISOString() };
   }
@@ -239,11 +233,9 @@ function getBadge(status) {
   if (status === "FORMAT_VERIFIED") {
     return "<span class='badge badge-green'>✔ VERIFIED</span>";
   }
-
   if (status === "INVALID_FORMAT") {
     return "<span class='badge badge-yellow'>⚠ INVALID</span>";
   }
-
   return "<span class='badge badge-red'>✖ MISSING</span>";
 }
 
@@ -288,22 +280,12 @@ function runHaloGovernance(emailStatus, phoneStatus, businessName, verificationI
   if (score < 0) score = 0;
 
   let riskLevel = "LOW";
+  if (score < 75) riskLevel = "MEDIUM";
+  if (score < 50) riskLevel = "HIGH";
 
-  if (score < 75) {
-    riskLevel = "MEDIUM";
-  }
-
-  if (score < 50) {
-    riskLevel = "HIGH";
-  }
-
-  let governanceNote = "";
-
-  if (issues.length === 0) {
-    governanceNote = "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, and receipt readiness. No major governance concerns were detected.";
-  } else {
-    governanceNote = "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, and receipt readiness. Review needed because: " + issues.join(", ") + ".";
-  }
+  const governanceNote = issues.length === 0
+    ? "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, and receipt readiness. No major governance concerns were detected."
+    : "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, and receipt readiness. Review needed because: " + issues.join(", ") + ".";
 
   return {
     status: "GOVERNED",
@@ -317,12 +299,41 @@ function getHaloBadge(halo) {
   if (halo.risk_level === "LOW") {
     return "<span class='badge badge-green'>🛡 HALO GOVERNED · LOW RISK · " + halo.confidence_score + "%</span>";
   }
-
   if (halo.risk_level === "MEDIUM") {
     return "<span class='badge badge-yellow'>🛡 HALO GOVERNED · MEDIUM RISK · " + halo.confidence_score + "%</span>";
   }
-
   return "<span class='badge badge-red'>🛡 HALO GOVERNED · HIGH RISK · " + halo.confidence_score + "%</span>";
+}
+
+function runShiftGuardExecutionLayer(source, halo) {
+  return {
+    status: "STANDBY",
+    mode: "READY",
+    execution_note:
+      "SHIFTGuard reviewed execution readiness for this proof flow. No live enforcement was triggered. Execution accountability layer is available if this proof requires action control."
+  };
+}
+
+function getShiftGuardBadge(shiftguard) {
+  return "<span class='badge badge-green'>⚙ SHIFTGuard READY · " + shiftguard.status + "</span>";
+}
+
+function getOverallEmailStatus(senderEmailVerification, recipientEmailVerification) {
+  if (
+    senderEmailVerification.status === "FORMAT_VERIFIED" &&
+    recipientEmailVerification.status === "FORMAT_VERIFIED"
+  ) {
+    return "FORMAT_VERIFIED";
+  }
+
+  if (
+    senderEmailVerification.status === "MISSING" ||
+    recipientEmailVerification.status === "MISSING"
+  ) {
+    return "MISSING";
+  }
+
+  return "INVALID_FORMAT";
 }
 
 async function createProof() {
@@ -349,27 +360,19 @@ async function createProof() {
     const documentContent = cleanValue(document.getElementById("documentContent").value);
 
     const senderEmailVerification = verifyEmailLight(senderEmail);
-const recipientEmailVerification = verifyEmailLight(recipientEmail);
-const senderPhoneVerification = verifyPhoneLight(senderPhone);
+    const recipientEmailVerification = verifyEmailLight(recipientEmail);
+    const senderPhoneVerification = verifyPhoneLight(senderPhone);
+    const overallEmailStatus = getOverallEmailStatus(senderEmailVerification, recipientEmailVerification);
 
-const overallEmailStatus =
-  senderEmailVerification.status === "FORMAT_VERIFIED" &&
-  recipientEmailVerification.status === "FORMAT_VERIFIED"
-    ? "FORMAT_VERIFIED"
-    : senderEmailVerification.status === "MISSING" ||
-      recipientEmailVerification.status === "MISSING"
-      ? "MISSING"
-      : "INVALID_FORMAT";
-    
     const halo = runHaloGovernance(
-  overallEmailStatus,
-  senderPhoneVerification.status,
-  businessName,
-  verificationIntent,
-  source
-);
+      overallEmailStatus,
+      senderPhoneVerification.status,
+      businessName,
+      verificationIntent,
+      source
+    );
 
-    
+    const shiftguard = runShiftGuardExecutionLayer(source, halo);
 
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
       throw new Error("Please fill in sender name, sender email, recipient name, recipient email, and document content.");
@@ -380,33 +383,25 @@ const overallEmailStatus =
       .insert([{
         proof_id: proofId,
         company_id: companyId,
-
         document_title: documentTitle,
         document_type: "proof_document",
         document_content: documentContent,
-
         sender_name: senderName,
         sender_email: senderEmail,
         sender_phone: senderPhone,
         sender_business: businessName,
-
         recipient_name: recipientName,
         recipient_email: recipientEmail,
-
-        email_verification_status: recipientEmailVerification.status,
+        email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
-
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
-
         verification_intent: verificationIntent,
         business_name: businessName,
-
         halo_status: halo.status,
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
         halo_governance_note: halo.governance_note,
-
         status: "CREATED"
       }]);
 
@@ -417,23 +412,17 @@ const overallEmailStatus =
       .insert([{
         proof_id: proofId,
         company_id: companyId,
-
         event_type: "created",
         source: source,
         industry: "general",
-
         status: "VERIFIED",
         verification_note: "Proof portal record created",
-
         verification_intent: verificationIntent,
         business_name: businessName,
-
-        email_verification_status: recipientEmailVerification.status,
+        email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
-
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
-
         halo_status: halo.status,
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
@@ -453,7 +442,10 @@ const overallEmailStatus =
         {
           proof_id: proofId,
           event_type: "EMAIL_LIGHT_VERIFIED",
-          event_note: "Recipient email verification status: " + recipientEmailVerification.status
+          event_note:
+            "Sender email: " + senderEmailVerification.status +
+            " | Recipient email: " + recipientEmailVerification.status +
+            " | Overall email: " + overallEmailStatus
         },
         {
           proof_id: proofId,
@@ -464,6 +456,11 @@ const overallEmailStatus =
           proof_id: proofId,
           event_type: "HALO_GOVERNANCE_CHECK",
           event_note: "HALO Status: " + halo.status + " | Risk: " + halo.risk_level + " | Confidence: " + halo.confidence_score + "% | Note: " + halo.governance_note
+        },
+        {
+          proof_id: proofId,
+          event_type: "SHIFTGUARD_EXECUTION_READY",
+          event_note: "SHIFTGuard Status: " + shiftguard.status + " | Mode: " + shiftguard.mode + " | Note: " + shiftguard.execution_note
         },
         {
           proof_id: proofId,
@@ -489,22 +486,17 @@ const overallEmailStatus =
       .insert([{
         proof_id: proofId,
         company_id: companyId,
-
         recipient_name: recipientName,
         recipient_email: recipientEmail,
         recipient_phone: "",
-
         email_verification_status: recipientEmailVerification.status,
         email_verified_at: recipientEmailVerification.verified_at,
-
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
-
         halo_status: halo.status,
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
         halo_governance_note: halo.governance_note,
-
         delivery_status: "PENDING"
       }]);
 
@@ -529,19 +521,22 @@ const overallEmailStatus =
       "Source: internal_portal<br>" +
       "Status: VERIFIED<br>" +
       "Verification Intent: " + verificationIntent + "<br>" +
-     "Sender Email Verification: " + getBadge(senderEmailVerification.status) + "<br>" +
-"Recipient Email Verification: " + getBadge(recipientEmailVerification.status) + "<br>" +
-"Overall Email Verification: " + getBadge(overallEmailStatus) + "<br>" +
+      "Sender Email Verification: " + getBadge(senderEmailVerification.status) + "<br>" +
+      "Recipient Email Verification: " + getBadge(recipientEmailVerification.status) + "<br>" +
+      "Overall Email Verification: " + getBadge(overallEmailStatus) + "<br>" +
       "Phone Verification: " + getBadge(senderPhoneVerification.status) + "<br>" +
       "Business Verification: " + businessName + " <span class='badge badge-green'>✔ CAPTURED</span><br>" +
       "HALO Status: " + getHaloBadge(halo) + "<br>" +
       "HALO Risk Level: " + halo.risk_level + "<br>" +
       "HALO Confidence Score: " + halo.confidence_score + "/100<br>" +
       "HALO Governance Note: " + halo.governance_note + "<br>" +
+      "SHIFTGuard Execution Layer: " + getShiftGuardBadge(shiftguard) + "<br>" +
+      "SHIFTGuard Mode: " + shiftguard.mode + "<br>" +
+      "SHIFTGuard Note: " + shiftguard.execution_note + "<br>" +
       "Sender: " + senderName + "<br>" +
       "Recipient: " + recipientName + "<br>" +
       "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
-      "Events logged: Created, Email Verified, Phone Verified, Business Captured, HALO Governed, Approved, Sent, Receipt Generated<br><br>" +
+      "Events logged: Created, Email Verified, Phone Verified, Business Captured, HALO Governed, SHIFTGuard Ready, Approved, Sent, Receipt Generated<br><br>" +
       "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
 
   } catch (error) {
@@ -570,49 +565,45 @@ async function createProofExternal(payload) {
     const verificationIntent = cleanValue(payload.verification_intent, "External Verification");
     const industry = cleanValue(payload.industry, "enterprise");
 
+    const senderEmailVerification = verifyEmailLight(senderEmail);
     const recipientEmailVerification = verifyEmailLight(recipientEmail);
     const senderPhoneVerification = verifyPhoneLight(senderPhone);
+    const overallEmailStatus = getOverallEmailStatus(senderEmailVerification, recipientEmailVerification);
 
     const halo = runHaloGovernance(
-      recipientEmailVerification.status,
+      overallEmailStatus,
       senderPhoneVerification.status,
       businessName,
       verificationIntent,
       source
     );
 
+    const shiftguard = runShiftGuardExecutionLayer(source, halo);
+
     const { error: documentError } = await supabaseClient
       .from("documents")
       .insert([{
         proof_id: proofId,
         company_id: companyId,
-
         document_title: documentTitle,
         document_type: "external_proof_document",
         document_content: documentContent,
-
         sender_name: senderName,
         sender_email: senderEmail,
         sender_phone: senderPhone,
         sender_business: businessName,
-
         recipient_name: recipientName,
         recipient_email: recipientEmail,
-
-        email_verification_status: recipientEmailVerification.status,
+        email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
-
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
-
         verification_intent: verificationIntent,
         business_name: businessName,
-
         halo_status: halo.status,
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
         halo_governance_note: halo.governance_note,
-
         status: "CREATED"
       }]);
 
@@ -623,23 +614,17 @@ async function createProofExternal(payload) {
       .insert([{
         proof_id: proofId,
         company_id: companyId,
-
         event_type: "created",
         source: source,
         industry: industry,
-
         status: "VERIFIED",
         verification_note: "Proof record created via external system connection",
-
         verification_intent: verificationIntent,
         business_name: businessName,
-
-        email_verification_status: recipientEmailVerification.status,
+        email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
-
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
-
         halo_status: halo.status,
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
@@ -659,7 +644,10 @@ async function createProofExternal(payload) {
         {
           proof_id: proofId,
           event_type: "EMAIL_LIGHT_VERIFIED",
-          event_note: "Recipient email verification status: " + recipientEmailVerification.status
+          event_note:
+            "Sender email: " + senderEmailVerification.status +
+            " | Recipient email: " + recipientEmailVerification.status +
+            " | Overall email: " + overallEmailStatus
         },
         {
           proof_id: proofId,
@@ -678,6 +666,11 @@ async function createProofExternal(payload) {
         },
         {
           proof_id: proofId,
+          event_type: "SHIFTGUARD_EXECUTION_READY",
+          event_note: "SHIFTGuard Status: " + shiftguard.status + " | Mode: " + shiftguard.mode + " | Note: " + shiftguard.execution_note
+        },
+        {
+          proof_id: proofId,
           event_type: "RECEIPT_GENERATED",
           event_note: "Receipt generated for external verification proof"
         }
@@ -690,22 +683,17 @@ async function createProofExternal(payload) {
       .insert([{
         proof_id: proofId,
         company_id: companyId,
-
         recipient_name: recipientName,
         recipient_email: recipientEmail,
         recipient_phone: recipientPhone,
-
         email_verification_status: recipientEmailVerification.status,
         email_verified_at: recipientEmailVerification.verified_at,
-
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
-
         halo_status: halo.status,
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
         halo_governance_note: halo.governance_note,
-
         delivery_status: "PENDING"
       }]);
 
@@ -729,13 +717,19 @@ async function createProofExternal(payload) {
       status: "VERIFIED",
       business_name: businessName,
       verification_intent: verificationIntent,
-      email_verification_status: recipientEmailVerification.status,
+      sender_email_verification_status: senderEmailVerification.status,
+      recipient_email_verification_status: recipientEmailVerification.status,
+      email_verification_status: overallEmailStatus,
       phone_verification_status: senderPhoneVerification.status,
       halo_status: halo.status,
       halo_risk_level: halo.risk_level,
       halo_confidence_score: halo.confidence_score,
       halo_governance_note: halo.governance_note,
-      halo_badge: getHaloBadge(halo)
+      halo_badge: getHaloBadge(halo),
+      shiftguard_status: shiftguard.status,
+      shiftguard_mode: shiftguard.mode,
+      shiftguard_note: shiftguard.execution_note,
+      shiftguard_badge: getShiftGuardBadge(shiftguard)
     };
 
   } catch (error) {
@@ -790,14 +784,19 @@ async function testExternalPlugin() {
       "Source: external_plugin<br>" +
       "Status: " + result.status + "<br>" +
       "Verification Intent: " + result.verification_intent + "<br>" +
-      "Email Verification: " + getBadge(result.email_verification_status) + "<br>" +
+      "Sender Email Verification: " + getBadge(result.sender_email_verification_status) + "<br>" +
+      "Recipient Email Verification: " + getBadge(result.recipient_email_verification_status) + "<br>" +
+      "Overall Email Verification: " + getBadge(result.email_verification_status) + "<br>" +
       "Phone Verification: " + getBadge(result.phone_verification_status) + "<br>" +
       "Business Verification: " + result.business_name + " <span class='badge badge-green'>✔ CAPTURED</span><br>" +
       "HALO Status: " + result.halo_badge + "<br>" +
       "HALO Risk Level: " + result.halo_risk_level + "<br>" +
       "HALO Confidence Score: " + result.halo_confidence_score + "/100<br>" +
-      "HALO Governance Note: " + result.halo_governance_note + "<br><br>" +
-      "Events logged: External Created, Email Checked, Phone Checked, Business Captured, Company Verified, HALO Governed, Receipt Generated<br><br>" +
+      "HALO Governance Note: " + result.halo_governance_note + "<br>" +
+      "SHIFTGuard Execution Layer: " + result.shiftguard_badge + "<br>" +
+      "SHIFTGuard Mode: " + result.shiftguard_mode + "<br>" +
+      "SHIFTGuard Note: " + result.shiftguard_note + "<br><br>" +
+      "Events logged: External Created, Email Checked, Phone Checked, Business Captured, Company Verified, HALO Governed, SHIFTGuard Ready, Receipt Generated<br><br>" +
       "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
   } else {
     resultBox.className = "result error";
