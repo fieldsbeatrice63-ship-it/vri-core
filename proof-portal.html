@@ -182,6 +182,10 @@ button:hover {
 
 <button onclick="testExternalPlugin()">TEST COMPANY PLUG-IN</button>
 
+  <button onclick="simulateHospitalExecution()">
+SIMULATE HOSPITAL EXECUTION
+</button>
+
 <div id="result" class="result"></div>
 </div>
 
@@ -822,6 +826,105 @@ async function testExternalPlugin() {
   }
 }
 
+
+ async function simulateHospitalExecution() {
+  const resultBox = document.getElementById("result");
+
+  if (!lastProofId) {
+    alert("Create a proof first before running a hospital execution demo.");
+    return;
+  }
+
+  const scenarios = [
+    {
+      action: "Medication Administration",
+      actor: "Nurse ID SG-NURSE-104",
+      risk_origin: "Patient identity confirmed and medication matched active order.",
+      decision: "APPROVED",
+      required_action: "Proceed with administration and document completion.",
+      halo_risk: "LOW"
+    },
+    {
+      action: "Controlled Substance Access",
+      actor: "Nurse ID SG-NURSE-221",
+      risk_origin: "Controlled medication requested without second verification.",
+      decision: "BLOCKED",
+      required_action: "Supervisor witness verification required before access.",
+      halo_risk: "HIGH"
+    },
+    {
+      action: "Patient Transfer Approval",
+      actor: "Nurse ID SG-NURSE-087",
+      risk_origin: "Transfer requested before discharge checklist was completed.",
+      decision: "ESCALATED",
+      required_action: "Complete checklist and obtain charge nurse approval.",
+      halo_risk: "MEDIUM"
+    },
+    {
+      action: "Medication Dose Change",
+      actor: "Nurse ID SG-NURSE-332",
+      risk_origin: "Dose entered does not match provider order.",
+      decision: "BLOCKED",
+      required_action: "Verify provider order before proceeding.",
+      halo_risk: "HIGH"
+    },
+    {
+      action: "Shift Handoff Verification",
+      actor: "Nurse ID SG-NURSE-118",
+      risk_origin: "Handoff completed with patient status, medication schedule, and pending labs confirmed.",
+      decision: "APPROVED",
+      required_action: "Proceed with next shift acceptance.",
+      halo_risk: "LOW"
+    }
+  ];
+
+  const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+  const executionId = "SG-EXEC-" + Date.now();
+
+  let badgeClass = "badge-green";
+  if (scenario.halo_risk === "MEDIUM") badgeClass = "badge-yellow";
+  if (scenario.halo_risk === "HIGH") badgeClass = "badge-red";
+
+  try {
+    const { error } = await supabaseClient
+      .from("verification_events")
+      .insert([{
+        proof_id: lastProofId,
+        event_type: "SHIFTGUARD_HOSPITAL_EXECUTION",
+        event_note:
+          "Execution ID: " + executionId +
+          " | Action: " + scenario.action +
+          " | Actor: " + scenario.actor +
+          " | Decision: " + scenario.decision +
+          " | HALO Risk Origin: " + scenario.risk_origin +
+          " | Required Action: " + scenario.required_action +
+          " | HALO Risk Level: " + scenario.halo_risk
+      }]);
+
+    if (error) throw error;
+
+    resultBox.className = "result";
+    resultBox.style.display = "block";
+
+    resultBox.innerHTML +=
+      "<br><br>" +
+      "<strong>⚙ SHIFTGuard™ HOSPITAL EXECUTION DEMO</strong><br><br>" +
+      "Execution ID: " + executionId + "<br>" +
+      "Execution Actor: " + scenario.actor + "<br>" +
+      "Execution Action: " + scenario.action + "<br>" +
+      "SHIFTGuard Decision: <span class='badge " + badgeClass + "'>" + scenario.decision + "</span><br>" +
+      "HALO Risk Level: <span class='badge " + badgeClass + "'>" + scenario.halo_risk + "</span><br>" +
+      "HALO Risk Started At: " + scenario.risk_origin + "<br>" +
+      "Required Action Before Nurse Moves Forward: " + scenario.required_action + "<br>" +
+      "Execution Trace: LOCKED<br>" +
+      "Audit Event: SHIFTGUARD_HOSPITAL_EXECUTION<br>";
+
+  } catch (error) {
+    resultBox.className = "result error";
+    resultBox.style.display = "block";
+    resultBox.innerHTML = "SHIFTGuard hospital execution failed: " + error.message;
+  }
+}
 function goToReceipt() {
   if (!lastProofId) {
     alert("No proof created yet.");
