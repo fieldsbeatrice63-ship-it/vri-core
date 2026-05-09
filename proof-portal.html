@@ -235,28 +235,96 @@ function verifyPhoneLight(phone) {
   return { status: "FORMAT_VERIFIED", verified_at: new Date().toISOString() };
 }
 
-  function getBadge(status) {
+function getBadge(status) {
   if (status === "FORMAT_VERIFIED") {
     return "<span class='badge badge-green'>✔ VERIFIED</span>";
   }
+
   if (status === "INVALID_FORMAT") {
     return "<span class='badge badge-yellow'>⚠ INVALID</span>";
   }
+
   return "<span class='badge badge-red'>✖ MISSING</span>";
 }
 
-  function getHaloStatus(emailStatus, phoneStatus) {
-  if (emailStatus === "FORMAT_VERIFIED" && phoneStatus === "FORMAT_VERIFIED") {
-    return "<span class='badge badge-green'>🟢 GOVERNED</span>";
+function runHaloGovernance(emailStatus, phoneStatus, businessName, verificationIntent, source) {
+  let score = 100;
+  let issues = [];
+
+  if (emailStatus === "INVALID_FORMAT") {
+    score -= 20;
+    issues.push("email format is invalid");
   }
 
-  if (emailStatus === "MISSING" || phoneStatus === "MISSING") {
-    return "<span class='badge badge-red'>🔴 RISK</span>";
+  if (emailStatus === "MISSING") {
+    score -= 25;
+    issues.push("email is missing");
   }
 
-  return "<span class='badge badge-yellow'>🟡 REVIEW</span>";
+  if (phoneStatus === "INVALID_FORMAT") {
+    score -= 20;
+    issues.push("phone format is invalid");
+  }
+
+  if (phoneStatus === "MISSING") {
+    score -= 25;
+    issues.push("phone is missing");
+  }
+
+  if (!businessName || businessName === "Individual") {
+    score -= 10;
+    issues.push("business name was not fully supplied");
+  }
+
+  if (!verificationIntent) {
+    score -= 10;
+    issues.push("verification intent is missing");
+  }
+
+  if (source === "external_plugin") {
+    score -= 5;
+  }
+
+  if (score < 0) score = 0;
+
+  let riskLevel = "LOW";
+
+  if (score < 75) {
+    riskLevel = "MEDIUM";
+  }
+
+  if (score < 50) {
+    riskLevel = "HIGH";
+  }
+
+  let governanceNote = "";
+
+  if (issues.length === 0) {
+    governanceNote = "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, and receipt readiness. No major governance concerns were detected.";
+  } else {
+    governanceNote = "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, and receipt readiness. Review needed because: " + issues.join(", ") + ".";
+  }
+
+  return {
+    status: "GOVERNED",
+    risk_level: riskLevel,
+    confidence_score: score,
+    governance_note: governanceNote
+  };
 }
-  
+
+function getHaloBadge(halo) {
+  if (halo.risk_level === "LOW") {
+    return "<span class='badge badge-green'>🛡 HALO GOVERNED · LOW RISK · " + halo.confidence_score + "%</span>";
+  }
+
+  if (halo.risk_level === "MEDIUM") {
+    return "<span class='badge badge-yellow'>🛡 HALO GOVERNED · MEDIUM RISK · " + halo.confidence_score + "%</span>";
+  }
+
+  return "<span class='badge badge-red'>🛡 HALO GOVERNED · HIGH RISK · " + halo.confidence_score + "%</span>";
+}
+
 async function createProof() {
   const resultBox = document.getElementById("result");
 
@@ -267,6 +335,7 @@ async function createProof() {
   try {
     const proofId = "VRI-" + Date.now();
     const companyId = "VRI_INTERNAL";
+    const source = "internal_portal";
     lastProofId = proofId;
 
     const senderName = cleanValue(document.getElementById("senderName").value);
@@ -281,7 +350,14 @@ async function createProof() {
 
     const recipientEmailVerification = verifyEmailLight(recipientEmail);
     const senderPhoneVerification = verifyPhoneLight(senderPhone);
-    
+
+    const halo = runHaloGovernance(
+      recipientEmailVerification.status,
+      senderPhoneVerification.status,
+      businessName,
+      verificationIntent,
+      source
+    );
 
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
       throw new Error("Please fill in sender name, sender email, recipient name, recipient email, and document content.");
@@ -314,6 +390,11 @@ async function createProof() {
         verification_intent: verificationIntent,
         business_name: businessName,
 
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note,
+
         status: "CREATED"
       }]);
 
@@ -326,7 +407,7 @@ async function createProof() {
         company_id: companyId,
 
         event_type: "created",
-        source: "internal_portal",
+        source: source,
         industry: "general",
 
         status: "VERIFIED",
@@ -339,7 +420,12 @@ async function createProof() {
         email_verified_at: recipientEmailVerification.verified_at,
 
         phone_verification_status: senderPhoneVerification.status,
-        phone_verified_at: senderPhoneVerification.verified_at
+        phone_verified_at: senderPhoneVerification.verified_at,
+
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note
       }]);
 
     if (proofError) throw proofError;
@@ -361,6 +447,11 @@ async function createProof() {
           proof_id: proofId,
           event_type: "PHONE_LIGHT_VERIFIED",
           event_note: "Sender phone verification status: " + senderPhoneVerification.status
+        },
+        {
+          proof_id: proofId,
+          event_type: "HALO_GOVERNANCE_CHECK",
+          event_note: "HALO Status: " + halo.status + " | Risk: " + halo.risk_level + " | Confidence: " + halo.confidence_score + "% | Note: " + halo.governance_note
         },
         {
           proof_id: proofId,
@@ -397,6 +488,11 @@ async function createProof() {
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
 
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note,
+
         delivery_status: "PENDING"
       }]);
 
@@ -414,25 +510,25 @@ async function createProof() {
     if (receiptError) throw receiptError;
 
     resultBox.className = "result";
-resultBox.innerHTML =
-  "<strong>✔ VERIFIED PROOF RECORD CREATED</strong><br><br>" +
-  "Proof ID: " + proofId + "<br>" +
-  "Company ID: " + companyId + "<br>" +
-  "Status: VERIFIED<br>" +
-  "Verification Intent: " + verificationIntent + "<br>" +
-  "Email Verification: " + getBadge(recipientEmailVerification.status) + "<br>" +
-  "Phone Verification: " + getBadge(senderPhoneVerification.status) + "<br>" +
-  "Business Verification: " + businessName + " <span class='badge badge-green'>✔ CAPTURED</span><br>" +
-  "Sender: " + senderName + "<br>" +
-  "Recipient: " + recipientName + "<br>" +
-  "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
-  "Events logged: Created, Email Verified, Phone Verified, Business Captured, Approved, Sent, Receipt Generated<br><br>" +
-  "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
-    
-   "HALO Status: " + getHaloStatus(
-  recipientEmailVerification.status,
-  senderPhoneVerification.status
-) + "<br>" + 
+    resultBox.innerHTML =
+      "<strong>✔ VERIFIED PROOF RECORD CREATED</strong><br><br>" +
+      "Proof ID: " + proofId + "<br>" +
+      "Company ID: " + companyId + "<br>" +
+      "Source: internal_portal<br>" +
+      "Status: VERIFIED<br>" +
+      "Verification Intent: " + verificationIntent + "<br>" +
+      "Email Verification: " + getBadge(recipientEmailVerification.status) + "<br>" +
+      "Phone Verification: " + getBadge(senderPhoneVerification.status) + "<br>" +
+      "Business Verification: " + businessName + " <span class='badge badge-green'>✔ CAPTURED</span><br>" +
+      "HALO Status: " + getHaloBadge(halo) + "<br>" +
+      "HALO Risk Level: " + halo.risk_level + "<br>" +
+      "HALO Confidence Score: " + halo.confidence_score + "/100<br>" +
+      "HALO Governance Note: " + halo.governance_note + "<br>" +
+      "Sender: " + senderName + "<br>" +
+      "Recipient: " + recipientName + "<br>" +
+      "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
+      "Events logged: Created, Email Verified, Phone Verified, Business Captured, HALO Governed, Approved, Sent, Receipt Generated<br><br>" +
+      "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
 
   } catch (error) {
     console.error("VRI Proof Portal Error:", error);
@@ -445,14 +541,15 @@ async function createProofExternal(payload) {
   try {
     const proofId = payload.proof_id || "VRI-EXT-" + Date.now();
     const companyId = payload.company_id || "CONNECTED_COMPANY_DEMO";
+    const source = "external_plugin";
     lastProofId = proofId;
 
     const senderName = cleanValue(payload.sender_name, "External System");
-    const senderEmail = cleanValue(payload.sender_email, "system@connectedcompany.com");
-    const senderPhone = cleanValue(payload.sender_phone, "1234567890");
+    const senderEmail = cleanValue(payload.sender_email);
+    const senderPhone = cleanValue(payload.sender_phone);
     const businessName = cleanValue(payload.business_name, "Connected Company");
     const recipientName = cleanValue(payload.recipient_name, "Test Recipient");
-    const recipientEmail = cleanValue(payload.recipient_email, "testrecipient@email.com");
+    const recipientEmail = cleanValue(payload.recipient_email);
     const recipientPhone = cleanValue(payload.recipient_phone, "");
     const documentTitle = cleanValue(payload.document_title, "External Company Verification Proof");
     const documentContent = cleanValue(payload.document_content, "This verified proof was created through a connected external company system.");
@@ -462,9 +559,13 @@ async function createProofExternal(payload) {
     const recipientEmailVerification = verifyEmailLight(recipientEmail);
     const senderPhoneVerification = verifyPhoneLight(senderPhone);
 
-    if (!senderEmail || !recipientEmail) {
-      throw new Error("External proof requires sender_email and recipient_email.");
-    }
+    const halo = runHaloGovernance(
+      recipientEmailVerification.status,
+      senderPhoneVerification.status,
+      businessName,
+      verificationIntent,
+      source
+    );
 
     const { error: documentError } = await supabaseClient
       .from("documents")
@@ -493,6 +594,11 @@ async function createProofExternal(payload) {
         verification_intent: verificationIntent,
         business_name: businessName,
 
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note,
+
         status: "CREATED"
       }]);
 
@@ -505,7 +611,7 @@ async function createProofExternal(payload) {
         company_id: companyId,
 
         event_type: "created",
-        source: "external_plugin",
+        source: source,
         industry: industry,
 
         status: "VERIFIED",
@@ -518,7 +624,12 @@ async function createProofExternal(payload) {
         email_verified_at: recipientEmailVerification.verified_at,
 
         phone_verification_status: senderPhoneVerification.status,
-        phone_verified_at: senderPhoneVerification.verified_at
+        phone_verified_at: senderPhoneVerification.verified_at,
+
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note
       }]);
 
     if (proofError) throw proofError;
@@ -548,6 +659,11 @@ async function createProofExternal(payload) {
         },
         {
           proof_id: proofId,
+          event_type: "HALO_GOVERNANCE_CHECK",
+          event_note: "HALO Status: " + halo.status + " | Risk: " + halo.risk_level + " | Confidence: " + halo.confidence_score + "% | Note: " + halo.governance_note
+        },
+        {
+          proof_id: proofId,
           event_type: "RECEIPT_GENERATED",
           event_note: "Receipt generated for external verification proof"
         }
@@ -570,6 +686,11 @@ async function createProofExternal(payload) {
 
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
+
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note,
 
         delivery_status: "PENDING"
       }]);
@@ -595,7 +716,12 @@ async function createProofExternal(payload) {
       business_name: businessName,
       verification_intent: verificationIntent,
       email_verification_status: recipientEmailVerification.status,
-      phone_verification_status: senderPhoneVerification.status
+      phone_verification_status: senderPhoneVerification.status,
+      halo_status: halo.status,
+      halo_risk_level: halo.risk_level,
+      halo_confidence_score: halo.confidence_score,
+      halo_governance_note: halo.governance_note,
+      halo_badge: getHaloBadge(halo)
     };
 
   } catch (error) {
@@ -615,13 +741,14 @@ async function testExternalPlugin() {
   resultBox.innerHTML = "Creating external verified proof...";
 
   const senderName = cleanValue(document.getElementById("senderName").value, "External System");
-  const senderEmail = cleanValue(document.getElementById("senderEmail").value, "system@connectedcompany.com");
+  const senderEmail = cleanValue(document.getElementById("senderEmail").value);
   const senderPhone = cleanValue(document.getElementById("senderPhone").value);
   const businessName = cleanValue(document.getElementById("businessName").value, "Connected Company");
   const recipientName = cleanValue(document.getElementById("recipientName").value, "Test Recipient");
   const recipientEmail = cleanValue(document.getElementById("recipientEmail").value);
   const documentTitle = cleanValue(document.getElementById("documentTitle").value, "External Company Verification Proof");
   const documentContent = cleanValue(document.getElementById("documentContent").value, "External proof test.");
+  const verificationIntent = cleanValue(document.getElementById("verificationIntent").value, "External Verification");
 
   const result = await createProofExternal({
     company_id: "CONNECTED_COMPANY_DEMO",
@@ -634,11 +761,9 @@ async function testExternalPlugin() {
     recipient_phone: "",
     document_title: documentTitle,
     document_content: documentContent,
-    verification_intent: "External Verification",
+    verification_intent: verificationIntent,
     industry: "enterprise"
   });
-
- 
 
   if (result.success) {
     lastProofId = result.proof_id;
@@ -648,22 +773,23 @@ async function testExternalPlugin() {
       "<strong>✔ EXTERNAL VERIFIED PROOF CREATED</strong><br><br>" +
       "Proof ID: " + result.proof_id + "<br>" +
       "Company ID: " + result.company_id + "<br>" +
+      "Source: external_plugin<br>" +
       "Status: " + result.status + "<br>" +
       "Verification Intent: " + result.verification_intent + "<br>" +
       "Email Verification: " + getBadge(result.email_verification_status) + "<br>" +
       "Phone Verification: " + getBadge(result.phone_verification_status) + "<br>" +
-      "Business Verification: " + result.business_name + " <span class='badge badge-green'>✔ CAPTURED</span><br><br>" +
-      "Events logged: External Created, Email Checked, Phone Checked, Business Captured, Company Verified, Receipt Generated<br><br>" +
+      "Business Verification: " + result.business_name + " <span class='badge badge-green'>✔ CAPTURED</span><br>" +
+      "HALO Status: " + result.halo_badge + "<br>" +
+      "HALO Risk Level: " + result.halo_risk_level + "<br>" +
+      "HALO Confidence Score: " + result.halo_confidence_score + "/100<br>" +
+      "HALO Governance Note: " + result.halo_governance_note + "<br><br>" +
+      "Events logged: External Created, Email Checked, Phone Checked, Business Captured, Company Verified, HALO Governed, Receipt Generated<br><br>" +
       "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
   } else {
     resultBox.className = "result error";
     resultBox.innerHTML = "Company plug-in test failed: " + result.error;
   }
 }
-   "HALO Status: " + getHaloStatus(
-  result.email_verification_status,
-  result.phone_verification_status
-) + "<br>" +
 
 function goToReceipt() {
   if (!lastProofId) {
@@ -675,6 +801,7 @@ function goToReceipt() {
 }
 </script>
 
-
 </body>
 </html>
+
+
