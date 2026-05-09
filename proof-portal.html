@@ -348,16 +348,28 @@ async function createProof() {
     const documentTitle = cleanValue(document.getElementById("documentTitle").value, "Untitled Document");
     const documentContent = cleanValue(document.getElementById("documentContent").value);
 
-    const recipientEmailVerification = verifyEmailLight(recipientEmail);
-    const senderPhoneVerification = verifyPhoneLight(senderPhone);
+    const senderEmailVerification = verifyEmailLight(senderEmail);
+const recipientEmailVerification = verifyEmailLight(recipientEmail);
+const senderPhoneVerification = verifyPhoneLight(senderPhone);
 
+const overallEmailStatus =
+  senderEmailVerification.status === "FORMAT_VERIFIED" &&
+  recipientEmailVerification.status === "FORMAT_VERIFIED"
+    ? "FORMAT_VERIFIED"
+    : senderEmailVerification.status === "MISSING" ||
+      recipientEmailVerification.status === "MISSING"
+      ? "MISSING"
+      : "INVALID_FORMAT";
+    
     const halo = runHaloGovernance(
-      recipientEmailVerification.status,
-      senderPhoneVerification.status,
-      businessName,
-      verificationIntent,
-      source
-    );
+  overallEmailStatus,
+  senderPhoneVerification.status,
+  businessName,
+  verificationIntent,
+  source
+);
+
+    
 
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
       throw new Error("Please fill in sender name, sender email, recipient name, recipient email, and document content.");
@@ -517,7 +529,9 @@ async function createProof() {
       "Source: internal_portal<br>" +
       "Status: VERIFIED<br>" +
       "Verification Intent: " + verificationIntent + "<br>" +
-      "Email Verification: " + getBadge(recipientEmailVerification.status) + "<br>" +
+     "Sender Email Verification: " + getBadge(senderEmailVerification.status) + "<br>" +
+"Recipient Email Verification: " + getBadge(recipientEmailVerification.status) + "<br>" +
+"Overall Email Verification: " + getBadge(overallEmailStatus) + "<br>" +
       "Phone Verification: " + getBadge(senderPhoneVerification.status) + "<br>" +
       "Business Verification: " + businessName + " <span class='badge badge-green'>✔ CAPTURED</span><br>" +
       "HALO Status: " + getHaloBadge(halo) + "<br>" +
