@@ -402,8 +402,13 @@ async function createProof() {
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
         halo_governance_note: halo.governance_note,
+        shiftguard_status: shiftguard.status,
+shiftguard_mode: shiftguard.mode,
+shiftguard_execution_note: shiftguard.execution_note,
         status: "CREATED"
+       
       }]);
+    
 
     if (documentError) throw documentError;
 
@@ -427,6 +432,9 @@ async function createProof() {
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
         halo_governance_note: halo.governance_note
+        shiftguard_status: shiftguard.status,
+shiftguard_mode: shiftguard.mode,
+shiftguard_execution_note: shiftguard.execution_note,
       }]);
 
     if (proofError) throw proofError;
