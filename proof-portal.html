@@ -399,10 +399,11 @@ async function createProof() {
         verification_intent: verificationIntent,
         business_name: businessName,
         halo_status: halo.status,
-        halo_risk_level: halo.risk_level,
-        halo_confidence_score: halo.confidence_score,
-        halo_governance_note: halo.governance_note,
-        shiftguard_status: shiftguard.status,
+halo_risk_level: halo.risk_level,
+halo_confidence_score: halo.confidence_score,
+halo_governance_note: halo.governance_note,
+
+shiftguard_status: shiftguard.status,
 shiftguard_mode: shiftguard.mode,
 shiftguard_execution_note: shiftguard.execution_note,
         status: "CREATED"
@@ -429,10 +430,11 @@ shiftguard_execution_note: shiftguard.execution_note,
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
         halo_status: halo.status,
-        halo_risk_level: halo.risk_level,
-        halo_confidence_score: halo.confidence_score,
-        halo_governance_note: halo.governance_note
-        shiftguard_status: shiftguard.status,
+halo_risk_level: halo.risk_level,
+halo_confidence_score: halo.confidence_score,
+halo_governance_note: halo.governance_note,
+
+shiftguard_status: shiftguard.status,
 shiftguard_mode: shiftguard.mode,
 shiftguard_execution_note: shiftguard.execution_note,
       }]);
@@ -608,10 +610,14 @@ async function createProofExternal(payload) {
         phone_verified_at: senderPhoneVerification.verified_at,
         verification_intent: verificationIntent,
         business_name: businessName,
-        halo_status: halo.status,
-        halo_risk_level: halo.risk_level,
-        halo_confidence_score: halo.confidence_score,
-        halo_governance_note: halo.governance_note,
+       halo_status: halo.status,
+halo_risk_level: halo.risk_level,
+halo_confidence_score: halo.confidence_score,
+halo_governance_note: halo.governance_note,
+
+shiftguard_status: shiftguard.status,
+shiftguard_mode: shiftguard.mode,
+shiftguard_execution_note: shiftguard.execution_note,
         status: "CREATED"
       }]);
 
@@ -633,10 +639,14 @@ async function createProofExternal(payload) {
         email_verified_at: recipientEmailVerification.verified_at,
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
-        halo_status: halo.status,
-        halo_risk_level: halo.risk_level,
-        halo_confidence_score: halo.confidence_score,
-        halo_governance_note: halo.governance_note
+       halo_status: halo.status,
+halo_risk_level: halo.risk_level,
+halo_confidence_score: halo.confidence_score,
+halo_governance_note: halo.governance_note,
+
+shiftguard_status: shiftguard.status,
+shiftguard_mode: shiftguard.mode,
+shiftguard_execution_note: shiftguard.execution_note,
       }]);
 
     if (proofError) throw proofError;
