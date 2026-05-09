@@ -368,6 +368,51 @@ body {
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 3px; }
+
+
+  /* =========================================
+   HALO RISK CARD STATES
+========================================= */
+
+/* LOW RISK */
+.risk-low {
+  border: 1px solid rgba(0,255,153,.65) !important;
+  box-shadow:
+    0 0 14px rgba(0,255,153,.18),
+    inset 0 0 12px rgba(0,255,153,.05);
+}
+
+/* MEDIUM RISK */
+.risk-medium {
+  border: 1px solid rgba(255,204,0,.70) !important;
+  box-shadow:
+    0 0 16px rgba(255,204,0,.18),
+    inset 0 0 12px rgba(255,204,0,.06);
+}
+
+/* HIGH RISK */
+.risk-high {
+  border: 1px solid rgba(255,70,70,.75) !important;
+  box-shadow:
+    0 0 18px rgba(255,70,70,.22),
+    inset 0 0 14px rgba(255,70,70,.07);
+}
+
+/* Badge States */
+.badge-low {
+  color: #00ff99 !important;
+  border-color: #00ff99 !important;
+}
+
+.badge-medium {
+  color: #ffcc00 !important;
+  border-color: #ffcc00 !important;
+}
+
+.badge-high {
+  color: #ff5c5c !important;
+  border-color: #ff5c5c !important;
+}
 </style>
 </head>
 
@@ -547,7 +592,21 @@ async function loadMonitor() {
 
   recordList.innerHTML = "";
 
-  allProofs.forEach(record => {
+ allProofs.forEach(record => {
+
+    let riskClass = "risk-low";
+    let badgeClass = "badge-low";
+
+    if (record.halo_risk_level === "MEDIUM") {
+      riskClass = "risk-medium";
+      badgeClass = "badge-medium";
+    }
+
+    if (record.halo_risk_level === "HIGH") {
+      riskClass = "risk-high";
+      badgeClass = "badge-high";
+    }
+
     const proofEvents = allEvents.filter(e => e.proof_id === record.proof_id);
     const risk = riskFromEvents(proofEvents.length);
 
@@ -559,13 +618,16 @@ async function loadMonitor() {
     industryCounts[industry] = (industryCounts[industry] || 0) + 1;
 
     const card = document.createElement("div");
-    card.className = "record-item " + risk.color;
+    card.className = "record-item " + risk.color + " " + riskClass;
     card.onclick = () => openReceipt(record.proof_id);
 
     card.innerHTML = `
       <div class="record-header">
         <strong>${record.proof_id}</strong>
-        <span class="badge ${risk.color}">${risk.level}</span>
+       <span class="badge ${risk.color} ${badgeClass}">
+  ${record.halo_risk_level ? record.halo_risk_level + " RISK" : risk.level}
+</span>
+
       </div>
       <div class="feed-meta">
         Status: ${record.status || "VERIFIED"}<br>
