@@ -917,6 +917,26 @@ async function testExternalPlugin() {
       "HALO Risk Level: <span class='badge " + badgeClass + "'>" + scenario.halo_risk + "</span><br>" +
       "HALO Risk Started At: " + scenario.risk_origin + "<br>" +
       "Required Action Before Nurse Moves Forward: " + scenario.required_action + "<br>" +
+      (scenario.decision === "BLOCKED" || scenario.decision === "ESCALATED"
+  ? "<div style='margin-top:20px;padding:18px;border:2px solid #ff4d4d;background:rgba(120,0,0,0.35);border-radius:12px;text-align:center;font-weight:bold;font-size:22px;color:#ff8080;box-shadow:0 0 18px rgba(255,0,0,0.35);'>" +
+
+    "⚠ OVERRIDE REQUIRED<br>" +
+    "Supervisor Authorization Needed<br><br>" +
+
+    "<button onclick=\"requestSupervisorOverride('" + executionId + "','" + scenario.decision + "')\">" +
+    "REQUEST SUPERVISOR OVERRIDE" +
+    "</button><br><br>" +
+
+    "<button onclick=\"supervisorOverrideDecision('" + executionId + "','APPROVED')\">" +
+    "APPROVE OVERRIDE" +
+    "</button><br><br>" +
+
+    "<button onclick=\"supervisorOverrideDecision('" + executionId + "','DENIED')\">" +
+    "DENY OVERRIDE" +
+    "</button>" +
+
+  "</div><br>"
+  : "") +
       "Execution Trace: LOCKED<br>" +
       "Audit Event: SHIFTGUARD_HOSPITAL_EXECUTION<br>";
 
@@ -924,6 +944,93 @@ async function testExternalPlugin() {
     resultBox.className = "result error";
     resultBox.style.display = "block";
     resultBox.innerHTML = "SHIFTGuard hospital execution failed: " + error.message;
+  }
+}
+  async function requestSupervisorOverride(executionId, scenarioDecision) {
+  const resultBox = document.getElementById("result");
+
+  if (!lastProofId) {
+    alert("No proof available for override.");
+    return;
+  }
+
+  try {
+    const overrideId = "OVR-" + Date.now();
+
+    const { error } = await supabaseClient
+      .from("verification_events")
+      .insert([{
+        proof_id: lastProofId,
+        event_type: "SUPERVISOR_OVERRIDE_REQUESTED",
+        event_note:
+          "Override ID: " + overrideId +
+          " | Linked Execution ID: " + executionId +
+          " | Original Decision: " + scenarioDecision +
+          " | Status: PENDING SUPERVISOR AUTHORIZATION"
+      }]);
+
+    if (error) throw error;
+
+    resultBox.innerHTML +=
+      "<br><strong>🛑 SUPERVISOR OVERRIDE REQUESTED</strong><br>" +
+      "Override ID: " + overrideId + "<br>" +
+      "Override Status: PENDING SUPERVISOR AUTHORIZATION<br>" +
+      "Execution remains on HOLD until authorized.<br>";
+
+  } catch (error) {
+    resultBox.className = "result error";
+    resultBox.innerHTML = "Supervisor override request failed: " + error.message;
+  }
+}
+  async function supervisorOverrideDecision(executionId, decision) {
+
+  const resultBox = document.getElementById("result");
+
+  if (!lastProofId) {
+    alert("No proof available.");
+    return;
+  }
+
+  try {
+
+    const decisionId = "SUP-" + Date.now();
+
+    const { error } = await supabaseClient
+      .from("verification_events")
+      .insert([{
+        proof_id: lastProofId,
+        event_type: "SUPERVISOR_OVERRIDE_" + decision,
+        event_note:
+          "Supervisor Decision ID: " + decisionId +
+          " | Linked Execution ID: " + executionId +
+          " | Supervisor Decision: " + decision
+      }]);
+
+    if (error) throw error;
+
+    if (decision === "APPROVED") {
+
+      resultBox.innerHTML +=
+        "<br><div style='margin-top:18px;padding:18px;border:2px solid #00ff99;background:rgba(0,80,40,0.35);border-radius:12px;text-align:center;font-weight:bold;font-size:20px;color:#00ff99;box-shadow:0 0 18px rgba(0,255,153,0.25);'>" +
+        "✔ SUPERVISOR OVERRIDE APPROVED<br>" +
+        "Execution Hold Released" +
+        "</div><br>";
+
+    } else {
+
+      resultBox.innerHTML +=
+        "<br><div style='margin-top:18px;padding:18px;border:2px solid #ff4d4d;background:rgba(120,0,0,0.35);border-radius:12px;text-align:center;font-weight:bold;font-size:20px;color:#ff8080;box-shadow:0 0 18px rgba(255,0,0,0.25);'>" +
+        "✖ SUPERVISOR OVERRIDE DENIED<br>" +
+        "Execution Remains Locked" +
+        "</div><br>";
+
+    }
+
+  } catch (error) {
+
+    resultBox.className = "result error";
+    resultBox.innerHTML = "Supervisor decision failed: " + error.message;
+
   }
 }
 function goToReceipt() {
