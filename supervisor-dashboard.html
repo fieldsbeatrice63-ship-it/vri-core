@@ -320,10 +320,14 @@ function cardClass(type, note) {
   if ((note || "").includes("BLOCKED") || (note || "").includes("ESCALATED")) return "blocked";
   return "pending";
 }
+  function openIncidentFile(proofId) {
+  if (!proofId) return;
+  window.location.href = "/incident-file.html?proof=" + encodeURIComponent(proofId);
+}
 
 function renderEvent(event) {
   return `
-    <div class="event-card ${cardClass(event.event_type, event.event_note)}">
+   <div class="event-card ${cardClass(event.event_type, event.event_note)}" onclick="openIncidentFile('${event.proof_id}')" style="cursor:pointer;">
       <div class="event-title">
         ${event.event_type} ${eventBadge(event.event_type)}
       </div>
