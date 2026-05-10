@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Supervisor Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #020818;
+  --panel: rgba(3, 12, 35, 0.88);
+  --border: rgba(0, 200, 255, 0.35);
+  --cyan: #00c8ff;
+  --blue: #1e8fff;
+  --green: #00ff99;
+  --yellow: #ffcc00;
+  --red: #ff4d4d;
+  --text: #e8f4ff;
+  --muted: #8fbfff;
+}
+
+body {
+  background:
+    radial-gradient(circle at center, rgba(0,200,255,0.12), transparent 38%),
+    linear-gradient(135deg, #020818, #04102e, #020818);
+  color: var(--text);
+  font-family: "Courier New", monospace;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.nav {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  z-index: 999;
+  font-size: 12px;
+}
+
+.nav a {
+  color: #8fbfff;
+  margin-left: 14px;
+  text-decoration: none;
+}
+
+.dashboard {
+  max-width: 1320px;
+  margin: 35px auto 0;
+}
+
+.header {
+  border: 1px solid var(--border);
+  background: rgba(2, 8, 24, 0.82);
+  border-radius: 14px;
+  padding: 22px 26px;
+  box-shadow: 0 0 24px rgba(0, 140, 255, 0.16);
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+}
+
+.logo {
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.logo span { color: var(--cyan); }
+
+.sub {
+  margin-top: 6px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  font-size: 12px;
+}
+
+.status-pill {
+  border: 1px solid var(--green);
+  color: var(--green);
+  border-radius: 999px;
+  padding: 8px 18px;
+  box-shadow: 0 0 14px rgba(0,255,153,0.25);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.stats {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.stat {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 140, 255, 0.12);
+}
+
+.stat strong {
+  display: block;
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+.stat span {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+.main {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 0 24px rgba(0, 140, 255, 0.16);
+  min-height: 520px;
+}
+
+.panel-title {
+  color: #bff3ff;
+  letter-spacing: 2px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0,200,255,0.22);
+}
+
+.event-card {
+  border: 1px solid rgba(0,200,255,0.22);
+  background: rgba(0, 20, 50, 0.58);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  line-height: 1.55;
+}
+
+.event-card.blocked {
+  border-left: 5px solid var(--red);
+  box-shadow: inset 0 0 12px rgba(255,77,77,0.08);
+}
+
+.event-card.pending {
+  border-left: 5px solid var(--yellow);
+  box-shadow: inset 0 0 12px rgba(255,204,0,0.08);
+}
+
+.event-card.approved {
+  border-left: 5px solid var(--green);
+  box-shadow: inset 0 0 12px rgba(0,255,153,0.08);
+}
+
+.event-card.denied {
+  border-left: 5px solid var(--red);
+  box-shadow: inset 0 0 12px rgba(255,77,77,0.1);
+}
+
+.event-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.event-meta {
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: bold;
+  margin-left: 6px;
+}
+
+.green { color: var(--green); border: 1px solid var(--green); }
+.yellow { color: var(--yellow); border: 1px solid var(--yellow); }
+.red { color: var(--red); border: 1px solid var(--red); }
+
+.empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 14px;
+}
+
+.footer-note {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+@media (max-width: 950px) {
+  .stats, .main {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="nav">
+  <a href="/index.html">System</a>
+  <a href="/proof-portal.html">Create Proof</a>
+  <a href="/verification-monitor.html">Monitor</a>
+  <a href="/receipt.html">Receipt</a>
+</div>
+
+<div class="dashboard">
+
+  <header class="header">
+    <div>
+      <div class="logo">VRI<span>™</span> SUPERVISOR DASHBOARD</div>
+      <div class="sub">VERIFICATION & RISK INFRASTRUCTURE · SHIFTGuard Clinical™ Human Authority Console</div>
+    </div>
+    <div class="status-pill">SUPERVISOR OVERRIDE SYSTEM · ACTIVE</div>
+  </header>
+
+  <section class="stats">
+    <div class="stat">
+      <strong id="pendingCount" style="color:var(--yellow);">0</strong>
+      <span>PENDING OVERRIDES</span>
+    </div>
+
+    <div class="stat">
+      <strong id="approvedCount" style="color:var(--green);">0</strong>
+      <span>APPROVED OVERRIDES</span>
+    </div>
+
+    <div class="stat">
+      <strong id="deniedCount" style="color:var(--red);">0</strong>
+      <span>DENIED OVERRIDES</span>
+    </div>
+
+    <div class="stat">
+      <strong id="blockedCount" style="color:var(--red);">0</strong>
+      <span>BLOCKED / ESCALATED</span>
+    </div>
+  </section>
+
+  <main class="main">
+
+    <section class="panel">
+      <div class="panel-title">OVERRIDE REQUEST QUEUE</div>
+      <div id="overrideQueue" class="feed"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">SHIFTGuard Clinical™ AUTHORITY LOG</div>
+      <div id="authorityLog" class="feed"></div>
+    </section>
+
+  </main>
+
+  <div class="footer-note">
+    VRI™ · HALO™ GOVERNANCE · SHIFTGuard Clinical™ EXECUTION AUTHORITY · AUDIT TRAIL ACTIVE
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+function eventBadge(type) {
+  if (type.includes("APPROVED")) {
+    return "<span class='badge green'>APPROVED</span>";
+  }
+
+  if (type.includes("DENIED")) {
+    return "<span class='badge red'>DENIED</span>";
+  }
+
+  if (type.includes("REQUESTED")) {
+    return "<span class='badge yellow'>PENDING</span>";
+  }
+
+  if (type.includes("HOSPITAL_EXECUTION")) {
+    return "<span class='badge red'>EXECUTION EVENT</span>";
+  }
+
+  return "<span class='badge yellow'>REVIEW</span>";
+}
+
+function cardClass(type, note) {
+  if (type.includes("APPROVED")) return "approved";
+  if (type.includes("DENIED")) return "denied";
+  if (type.includes("REQUESTED")) return "pending";
+  if ((note || "").includes("BLOCKED") || (note || "").includes("ESCALATED")) return "blocked";
+  return "pending";
+}
+
+function renderEvent(event) {
+  return `
+    <div class="event-card ${cardClass(event.event_type, event.event_note)}">
+      <div class="event-title">
+        ${event.event_type} ${eventBadge(event.event_type)}
+      </div>
+      <div class="event-meta">
+        Proof ID: ${event.proof_id || "N/A"}<br>
+        ${event.event_note || "No event note available."}<br>
+        Timestamp: ${event.created_at ? new Date(event.created_at).toLocaleString() : "N/A"}
+      </div>
+    </div>
+  `;
+}
+
+async function loadSupervisorDashboard() {
+  const overrideQueue = document.getElementById("overrideQueue");
+  const authorityLog = document.getElementById("authorityLog");
+
+  overrideQueue.innerHTML = "Loading override requests...";
+  authorityLog.innerHTML = "Loading authority log...";
+
+  const { data, error } = await supabaseClient
+    .from("verification_events")
+    .select("*")
+    .or(
+      "event_type.eq.SUPERVISOR_OVERRIDE_REQUESTED,event_type.eq.SHIFTGUARD_HOSPITAL_EXECUTION,event_type.like.SHIFTGUARD_SUPERVISOR_AUTHORIZATION_%,event_type.like.SUPERVISOR_OVERRIDE_%"
+    )
+    .order("created_at", { ascending: false })
+    .limit(75);
+
+  if (error) {
+    overrideQueue.innerHTML = "Error loading dashboard data.";
+    authorityLog.innerHTML = "Check Supabase connection.";
+    console.error("Supervisor dashboard error:", error);
+    return;
+  }
+
+  const events = data || [];
+
+  const pending = events.filter(e => e.event_type === "SUPERVISOR_OVERRIDE_REQUESTED");
+  const approved = events.filter(e => e.event_type.includes("APPROVED"));
+  const denied = events.filter(e => e.event_type.includes("DENIED"));
+  const blocked = events.filter(e =>
+    e.event_type === "SHIFTGUARD_HOSPITAL_EXECUTION" &&
+    ((e.event_note || "").includes("BLOCKED") || (e.event_note || "").includes("ESCALATED"))
+  );
+
+  document.getElementById("pendingCount").textContent = pending.length;
+  document.getElementById("approvedCount").textContent = approved.length;
+  document.getElementById("deniedCount").textContent = denied.length;
+  document.getElementById("blockedCount").textContent = blocked.length;
+
+  const queueEvents = [...pending, ...blocked];
+
+  overrideQueue.innerHTML = queueEvents.length
+    ? queueEvents.map(renderEvent).join("")
+    : "<div class='empty'>No pending overrides or blocked executions found.</div>";
+
+  const authorityEvents = events.filter(e =>
+    e.event_type.includes("SUPERVISOR_OVERRIDE") ||
+    e.event_type.includes("SHIFTGUARD_SUPERVISOR_AUTHORIZATION")
+  );
+
+  authorityLog.innerHTML = authorityEvents.length
+    ? authorityEvents.map(renderEvent).join("")
+    : "<div class='empty'>No supervisor authority events logged yet.</div>";
+}
+
+loadSupervisorDashboard();
+setInterval(loadSupervisorDashboard, 8000);
+</script>
+
+</body>
+</html>
