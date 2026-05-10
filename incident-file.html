@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Incident File</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:#020818;
+  --panel:rgba(3,12,35,.9);
+  --border:rgba(0,200,255,.35);
+  --cyan:#00c8ff;
+  --green:#00ff99;
+  --yellow:#ffcc00;
+  --red:#ff4d4d;
+  --text:#e8f4ff;
+  --muted:#8fbfff;
+}
+
+body {
+  background:
+    radial-gradient(circle at center, rgba(0,200,255,.12), transparent 38%),
+    linear-gradient(135deg,#020818,#04102e,#020818);
+  color:var(--text);
+  font-family:"Courier New", monospace;
+  min-height:100vh;
+  padding:28px;
+}
+
+.nav {
+  position:fixed;
+  top:15px;
+  right:20px;
+  z-index:999;
+  font-size:12px;
+}
+
+.nav a {
+  color:#8fbfff;
+  margin-left:14px;
+  text-decoration:none;
+}
+
+.wrap {
+  max-width:1050px;
+  margin:40px auto 0;
+}
+
+.header, .card {
+  border:1px solid var(--border);
+  background:var(--panel);
+  border-radius:14px;
+  padding:22px;
+  box-shadow:0 0 24px rgba(0,140,255,.16);
+  margin-bottom:16px;
+}
+
+.logo {
+  font-size:36px;
+  font-weight:900;
+}
+
+.logo span { color:var(--cyan); }
+
+.sub {
+  color:var(--muted);
+  margin-top:8px;
+  letter-spacing:2px;
+  font-size:12px;
+}
+
+.status {
+  display:inline-block;
+  margin-top:14px;
+  padding:7px 14px;
+  border-radius:999px;
+  border:1px solid var(--green);
+  color:var(--green);
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.title {
+  color:#bff3ff;
+  letter-spacing:2px;
+  font-size:14px;
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:1px solid rgba(0,200,255,.22);
+}
+
+.row {
+  line-height:1.7;
+  font-size:13px;
+  color:var(--muted);
+  word-break:break-word;
+}
+
+.row strong {
+  color:white;
+}
+
+.badge {
+  display:inline-block;
+  padding:5px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:bold;
+}
+
+.green { color:var(--green); border:1px solid var(--green); }
+.yellow { color:var(--yellow); border:1px solid var(--yellow); }
+.red { color:var(--red); border:1px solid var(--red); }
+
+.audit {
+  white-space:pre-wrap;
+  line-height:1.7;
+  color:#dbeafe;
+  font-size:13px;
+}
+
+button {
+  width:100%;
+  padding:14px;
+  margin-top:14px;
+  border:1px solid #1e8fff;
+  background:rgba(0,80,255,.25);
+  color:white;
+  border-radius:8px;
+  font-weight:bold;
+  letter-spacing:2px;
+  cursor:pointer;
+}
+
+@media(max-width:850px) {
+  .grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="nav">
+  <a href="/index.html">System</a>
+  <a href="/proof-portal.html">Create Proof</a>
+  <a href="/verification-monitor.html">Monitor</a>
+  <a href="/supervisor-dashboard.html">Supervisor</a>
+  <a href="/receipt.html">Receipt</a>
+</div>
+
+<div class="wrap">
+
+  <div class="header">
+    <div class="logo">VRI<span>™</span> INCIDENT FILE</div>
+    <div class="sub">VERIFICATION & RISK INFRASTRUCTURE · SHIFTGuard Clinical™ Execution Record</div>
+    <div class="status">AUDIT FILE · ACTIVE</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="title">INCIDENT SUMMARY</div>
+      <div id="summary" class="row">Loading incident file...</div>
+    </div>
+
+    <div class="card">
+      <div class="title">HUMAN AUTHORITY STATUS</div>
+      <div id="authority" class="row">Loading authority chain...</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="title">FULL AUDIT TRAIL</div>
+    <div id="auditTrail" class="audit">Loading audit trail...</div>
+  </div>
+
+  <button onclick="window.print()">PRINT INCIDENT FILE</button>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+function getProofId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("proof");
+}
+
+function badgeForText(text) {
+  const value = text || "";
+  if (value.includes("APPROVED") || value.includes("ACCESS GRANTED")) {
+    return "<span class='badge green'>ACCESS GRANTED</span>";
+  }
+  if (value.includes("DENIED") || value.includes("ACCESS DENIED")) {
+    return "<span class='badge red'>ACCESS DENIED</span>";
+  }
+  if (value.includes("BLOCKED")) {
+    return "<span class='badge red'>BLOCKED</span>";
+  }
+  if (value.includes("ESCALATED") || value.includes("PENDING")) {
+    return "<span class='badge yellow'>PENDING / ESCALATED</span>";
+  }
+  return "<span class='badge yellow'>UNDER REVIEW</span>";
+}
+
+async function loadIncidentFile() {
+  const proofId = getProofId();
+
+  if (!proofId) {
+    document.getElementById("summary").innerHTML = "No Proof ID was provided.";
+    document.getElementById("authority").innerHTML = "No authority record available.";
+    document.getElementById("auditTrail").innerHTML = "Missing URL parameter: ?proof=PROOF_ID";
+    return;
+  }
+
+  const { data: proof } = await supabaseClient
+    .from("proof_records")
+    .select("*")
+    .eq("proof_id", proofId)
+    .maybeSingle();
+
+  const { data: events, error } = await supabaseClient
+    .from("verification_events")
+    .select("*")
+    .eq("proof_id", proofId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    document.getElementById("summary").innerHTML = "Error loading incident file.";
+    document.getElementById("auditTrail").innerHTML = error.message;
+    return;
+  }
+
+  const allEvents = events || [];
+  const executionEvent = allEvents.find(e => e.event_type === "SHIFTGUARD_HOSPITAL_EXECUTION");
+  const overrideRequest = allEvents.find(e => e.event_type === "SUPERVISOR_OVERRIDE_REQUESTED");
+  const authorityEvent = allEvents.find(e =>
+    e.event_type.includes("SHIFTGUARD_SUPERVISOR_AUTHORIZATION") ||
+    e.event_type.includes("SUPERVISOR_OVERRIDE_APPROVED") ||
+    e.event_type.includes("SUPERVISOR_OVERRIDE_DENIED")
+  );
+
+  const latestStatusText =
+    (authorityEvent && authorityEvent.event_note) ||
+    (overrideRequest && overrideRequest.event_note) ||
+    (executionEvent && executionEvent.event_note) ||
+    "No execution incident found.";
+
+  document.getElementById("summary").innerHTML =
+    "<strong>Proof ID:</strong> " + proofId + "<br>" +
+    "<strong>Company ID:</strong> " + ((proof && proof.company_id) || "N/A") + "<br>" +
+    "<strong>Source:</strong> " + ((proof && proof.source) || "N/A") + "<br>" +
+    "<strong>Status:</strong> " + ((proof && proof.status) || "N/A") + "<br>" +
+    "<strong>HALO Risk:</strong> " + ((proof && proof.halo_risk_level) || "N/A") + "<br>" +
+    "<strong>SHIFTGuard:</strong> " + ((proof && proof.shiftguard_status) || "N/A") + "<br>" +
+    "<strong>Incident State:</strong> " + badgeForText(latestStatusText);
+
+  document.getElementById("authority").innerHTML =
+    "<strong>Authority Status:</strong> " + badgeForText(latestStatusText) + "<br><br>" +
+    (authorityEvent
+      ? authorityEvent.event_note
+      : overrideRequest
+        ? overrideRequest.event_note
+        : "No supervisor authority decision has been logged yet.");
+
+  document.getElementById("auditTrail").innerHTML = allEvents.length
+    ? allEvents.map(e =>
+        "[" + (e.created_at ? new Date(e.created_at).toLocaleString() : "N/A") + "]\n" +
+        e.event_type + "\n" +
+        "Proof ID: " + e.proof_id + "\n" +
+        (e.event_note || "No event note.") +
+        "\n\n---\n"
+      ).join("")
+    : "No audit events found for this proof.";
+}
+
+loadIncidentFile();
+</script>
+
+</body>
+</html>
