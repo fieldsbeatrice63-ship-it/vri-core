@@ -946,91 +946,89 @@ async function testExternalPlugin() {
     resultBox.innerHTML = "SHIFTGuard hospital execution failed: " + error.message;
   }
 }
-  async function requestSupervisorOverride(executionId, scenarioDecision) {
+ function supervisorOverrideDecision(executionId, decision) {
   const resultBox = document.getElementById("result");
 
-  if (!lastProofId) {
-    alert("No proof available for override.");
+  const decisionLabel = decision === "APPROVED"
+    ? "ACCESS GRANTED BY HUMAN AUTHORITY"
+    : "ACCESS DENIED BY HUMAN AUTHORITY";
+
+  resultBox.innerHTML +=
+    "<br><div style='margin-top:20px;padding:18px;border:2px solid #1e8fff;background:rgba(0,40,90,0.45);border-radius:12px;'>" +
+    "<strong>SHIFTGuard Clinical™ Supervisor Authorization</strong><br><br>" +
+    "Decision Type: <strong>" + decision + "</strong><br>" +
+    "Linked Execution ID: " + executionId + "<br><br>" +
+
+    "<label>Supervisor ID</label>" +
+    "<input id='supervisorId' placeholder='Enter supervisor ID'>" +
+
+    "<label>Supervisor Name</label>" +
+    "<input id='supervisorName' placeholder='Enter supervisor name'>" +
+
+    "<label>Department</label>" +
+    "<input id='supervisorDepartment' placeholder='Enter department'>" +
+
+    "<label>Reason for " + (decision === "APPROVED" ? "Approval" : "Denial") + "</label>" +
+    "<textarea id='supervisorReason' placeholder='Enter reason'></textarea>" +
+
+    "<label>Witness, if any</label>" +
+    "<input id='supervisorWitness' placeholder='Enter witness name or N/A'>" +
+
+    "<button onclick=\"submitSupervisorAuthorization('" + executionId + "','" + decision + "','" + decisionLabel + "')\">" +
+    "SUBMIT SUPERVISOR AUTHORIZATION" +
+    "</button>" +
+    "</div>";
+}
+
+async function submitSupervisorAuthorization(executionId, decision, decisionLabel) {
+  const resultBox = document.getElementById("result");
+
+  const supervisorId = cleanValue(document.getElementById("supervisorId").value);
+  const supervisorName = cleanValue(document.getElementById("supervisorName").value);
+  const department = cleanValue(document.getElementById("supervisorDepartment").value);
+  const reason = cleanValue(document.getElementById("supervisorReason").value);
+  const witness = cleanValue(document.getElementById("supervisorWitness").value, "N/A");
+  const timestamp = new Date().toISOString();
+  const authorityCode = "SG-HUMAN-AUTH-" + Date.now();
+
+  if (!supervisorId || !supervisorName || !department || !reason) {
+    alert("Please fill in Supervisor ID, Supervisor Name, Department, and Reason.");
     return;
   }
 
   try {
-    const overrideId = "OVR-" + Date.now();
-
     const { error } = await supabaseClient
       .from("verification_events")
       .insert([{
         proof_id: lastProofId,
-        event_type: "SUPERVISOR_OVERRIDE_REQUESTED",
+        event_type: "SHIFTGUARD_SUPERVISOR_AUTHORIZATION_" + decision,
         event_note:
-          "Override ID: " + overrideId +
-          " | Linked Execution ID: " + executionId +
-          " | Original Decision: " + scenarioDecision +
-          " | Status: PENDING SUPERVISOR AUTHORIZATION"
+          decisionLabel +
+          " | Authority Code: " + authorityCode +
+          " | Execution ID: " + executionId +
+          " | Supervisor ID: " + supervisorId +
+          " | Supervisor Name: " + supervisorName +
+          " | Department: " + department +
+          " | Reason: " + reason +
+          " | Witness: " + witness +
+          " | Timestamp: " + timestamp
       }]);
 
     if (error) throw error;
 
     resultBox.innerHTML +=
-      "<br><strong>🛑 SUPERVISOR OVERRIDE REQUESTED</strong><br>" +
-      "Override ID: " + overrideId + "<br>" +
-      "Override Status: PENDING SUPERVISOR AUTHORIZATION<br>" +
-      "Execution remains on HOLD until authorized.<br>";
+      "<br><div style='margin-top:18px;padding:18px;border:2px solid " + (decision === "APPROVED" ? "#00ff99" : "#ff4d4d") + ";background:" + (decision === "APPROVED" ? "rgba(0,80,40,0.35)" : "rgba(120,0,0,0.35)") + ";border-radius:12px;text-align:center;font-weight:bold;font-size:20px;color:" + (decision === "APPROVED" ? "#00ff99" : "#ff8080") + ";'>" +
+      decisionLabel + "<br>" +
+      "Authority Code: " + authorityCode + "<br>" +
+      "Supervisor: " + supervisorName + " (" + supervisorId + ")<br>" +
+      "Department: " + department + "<br>" +
+      "Witness: " + witness + "<br>" +
+      "Timestamp: " + new Date(timestamp).toLocaleString() +
+      "</div><br>";
 
   } catch (error) {
     resultBox.className = "result error";
-    resultBox.innerHTML = "Supervisor override request failed: " + error.message;
-  }
-}
-  async function supervisorOverrideDecision(executionId, decision) {
-
-  const resultBox = document.getElementById("result");
-
-  if (!lastProofId) {
-    alert("No proof available.");
-    return;
-  }
-
-  try {
-
-    const decisionId = "SUP-" + Date.now();
-
-    const { error } = await supabaseClient
-      .from("verification_events")
-      .insert([{
-        proof_id: lastProofId,
-        event_type: "SUPERVISOR_OVERRIDE_" + decision,
-        event_note:
-          "Supervisor Decision ID: " + decisionId +
-          " | Linked Execution ID: " + executionId +
-          " | Supervisor Decision: " + decision
-      }]);
-
-    if (error) throw error;
-
-    if (decision === "APPROVED") {
-
-      resultBox.innerHTML +=
-        "<br><div style='margin-top:18px;padding:18px;border:2px solid #00ff99;background:rgba(0,80,40,0.35);border-radius:12px;text-align:center;font-weight:bold;font-size:20px;color:#00ff99;box-shadow:0 0 18px rgba(0,255,153,0.25);'>" +
-        "✔ SUPERVISOR OVERRIDE APPROVED<br>" +
-        "Execution Hold Released" +
-        "</div><br>";
-
-    } else {
-
-      resultBox.innerHTML +=
-        "<br><div style='margin-top:18px;padding:18px;border:2px solid #ff4d4d;background:rgba(120,0,0,0.35);border-radius:12px;text-align:center;font-weight:bold;font-size:20px;color:#ff8080;box-shadow:0 0 18px rgba(255,0,0,0.25);'>" +
-        "✖ SUPERVISOR OVERRIDE DENIED<br>" +
-        "Execution Remains Locked" +
-        "</div><br>";
-
-    }
-
-  } catch (error) {
-
-    resultBox.className = "result error";
-    resultBox.innerHTML = "Supervisor decision failed: " + error.message;
-
+    resultBox.innerHTML = "Supervisor authorization failed: " + error.message;
   }
 }
 function goToReceipt() {
