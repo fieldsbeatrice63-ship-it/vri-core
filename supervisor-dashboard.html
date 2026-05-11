@@ -278,6 +278,7 @@ body {
 
   </main>
 
+  <div id="liveEscalationFeed"></div>
   <div class="footer-note">
     VRI™ · HALO™ GOVERNANCE · SHIFTGuard Clinical™ EXECUTION AUTHORITY · AUDIT TRAIL ACTIVE
   </div>
@@ -397,6 +398,102 @@ async function loadSupervisorDashboard() {
 loadSupervisorDashboard();
 setInterval(loadSupervisorDashboard, 8000);
 </script>
+<script>
+async function loadEscalations() {
 
+  const escalationContainer =
+    document.getElementById("liveEscalationFeed");
+
+  if (!escalationContainer) return;
+
+  escalationContainer.innerHTML =
+    "<div style='padding:20px;color:#8ff;'>Loading VRI escalation feed...</div>";
+
+  const { data, error } = await supabaseClient
+    .from("execution_escalations")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    escalationContainer.innerHTML =
+      `<div style="color:red;padding:20px;">
+        Failed to load escalation feed
+      </div>`;
+
+    console.error(error);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    escalationContainer.innerHTML =
+      "<div style='padding:20px;color:#8ff;'>No active escalations</div>";
+    return;
+  }
+
+  escalationContainer.innerHTML = data.map(item => `
+    <div style="
+      background:rgba(0,20,40,0.9);
+      border:1px solid rgba(0,255,255,0.25);
+      border-left:4px solid #ff4444;
+      border-radius:12px;
+      padding:18px;
+      margin-bottom:14px;
+      box-shadow:0 0 25px rgba(0,255,255,0.08);
+    ">
+
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:10px;
+      ">
+
+        <div style="
+          font-size:13px;
+          color:#00e5ff;
+          font-weight:700;
+          letter-spacing:1px;
+        ">
+          LIVE ESCALATION
+        </div>
+
+        <div style="
+          background:#ff4444;
+          color:white;
+          padding:4px 10px;
+          border-radius:999px;
+          font-size:11px;
+          font-weight:700;
+        ">
+          ${item.escalation_status || "OPEN"}
+        </div>
+
+      </div>
+
+      <div style="color:white;font-size:18px;font-weight:700;">
+        ${item.action || "Unknown Action"}
+      </div>
+
+      <div style="
+        margin-top:8px;
+        color:#8fdcff;
+        font-size:14px;
+        line-height:1.6;
+      ">
+        <strong>Actor:</strong> ${item.actor_name || "Unknown"}<br>
+        <strong>Department:</strong> ${item.department || "Unknown"}<br>
+        <strong>Risk:</strong> ${item.risk_level || "UNKNOWN"}<br>
+        <strong>Execution ID:</strong> ${item.execution_id || "N/A"}<br>
+        <strong>Proof ID:</strong> ${item.proof_id || "N/A"}
+      </div>
+
+    </div>
+  `).join("");
+}
+
+loadEscalations();
+
+setInterval(loadEscalations, 10000);
+</script>
 </body>
 </html>
