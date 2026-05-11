@@ -348,6 +348,450 @@ app.get("/api/vri/audit/:proof_id", async (req, res) => {
   }
 });
 // =====================================================
+// HEALTHCARE ENTERPRISE SIMULATION
+// =====================================================
+
+app.get("/simulate/healthcare/high-risk-medication", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "Nurse Olivia Carter",
+      department: "ICU",
+      action: "High-Risk Medication Administration",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "HEALTHCARE_HIGH_RISK_MEDICATION",
+      environment: "SHIFTGuard Clinical™",
+      patient_state: "CRITICAL",
+      supervisor_required: true,
+      medication_classification: "CONTROLLED_SUBSTANCE",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("Healthcare simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Healthcare simulation failed",
+      error: error.message
+    });
+  }
+});
+
+// =====================================================
+// BANKING ENTERPRISE SIMULATION
+// =====================================================
+
+app.get("/simulate/banking/high-risk-transfer", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "Bank Officer Marcus Reed",
+      department: "Fraud Risk Operations",
+      action: "High-Risk Wire Transfer Approval",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "BANKING_HIGH_RISK_TRANSFER",
+      environment: "Financial Risk Verification",
+      transaction_state: "FLAGGED_FOR_REVIEW",
+      supervisor_required: true,
+      risk_category: "WIRE_TRANSFER_AUTHORIZATION",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("Banking simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Banking simulation failed",
+      error: error.message
+    });
+  }
+});
+// =====================================================
+// LEGAL ENTERPRISE SIMULATION
+// =====================================================
+
+app.get("/simulate/legal/document-authorization", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "Attorney Sophia Bennett",
+      department: "Legal Compliance",
+      action: "Legal Document Authorization",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "LEGAL_DOCUMENT_AUTHORIZATION",
+      environment: "Legal Verification Infrastructure",
+      document_state: "PENDING_FINAL_AUTHORITY",
+      supervisor_required: true,
+      legal_classification: "BINDING_EXECUTION_DOCUMENT",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("Legal simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Legal simulation failed",
+      error: error.message
+    });
+  }
+});
+
+// =====================================================
+// HR ENTERPRISE SIMULATION
+// =====================================================
+
+app.get("/simulate/hr/employee-termination", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "HR Director Amanda Brooks",
+      department: "Human Resources",
+      action: "Employee Termination Authorization",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "HR_EMPLOYEE_TERMINATION",
+      environment: "Enterprise Workforce Governance",
+      employee_status: "UNDER_REVIEW",
+      supervisor_required: true,
+      hr_classification: "TERMINATION_EXECUTION",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("HR simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "HR simulation failed",
+      error: error.message
+    });
+  }
+});
+
+// =====================================================
+// AI GOVERNANCE SIMULATION
+// =====================================================
+
+app.get("/simulate/ai-governance/model-execution", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "HALO Autonomous Governance Engine",
+      department: "AI Governance Division",
+      action: "Autonomous AI Model Execution",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "HALO_AI_GOVERNANCE",
+      environment: "HALO™ GOVERNANCE LAYER",
+      ai_state: "EXECUTION_REVIEW_REQUIRED",
+      supervisor_required: true,
+      governance_classification: "AUTONOMOUS_DECISION_EXECUTION",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("AI governance simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "AI governance simulation failed",
+      error: error.message
+    });
+  }
+});
+// =====================================================
+// GOVERNMENT CONTRACTOR SIMULATION
+// =====================================================
+
+app.get("/simulate/government/contractor-compliance", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "Compliance Officer Daniel Hayes",
+      department: "Government Contractor Compliance",
+      action: "Restricted Contract File Authorization",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "GOVERNMENT_CONTRACTOR_COMPLIANCE",
+      environment: "Contractor Risk & Compliance Infrastructure",
+      contract_state: "RESTRICTED_REVIEW",
+      supervisor_required: true,
+      compliance_classification: "CONTROLLED_CONTRACT_AUTHORIZATION",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("Government contractor simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Government contractor simulation failed",
+      error: error.message
+    });
+  }
+});
+// =====================================================
+// IDENTITY VERIFICATION SIMULATION
+// =====================================================
+
+app.get("/simulate/identity/high-confidence-check", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "Identity Verification Officer Maya Ellis",
+      department: "Identity Risk Operations",
+      action: "High-Confidence Identity Verification",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "IDENTITY_HIGH_CONFIDENCE_CHECK",
+      environment: "VRI™ Identity Verification Layer",
+      identity_state: "VERIFICATION_REQUIRED",
+      confidence_score: "92%",
+      supervisor_required: true,
+      identity_classification: "HIGH_CONFIDENCE_IDENTITY_REVIEW",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("Identity verification simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Identity verification simulation failed",
+      error: error.message
+    });
+  }
+});
+// =====================================================
+// BIOMETRIC CHECKPOINT SIMULATION
+// =====================================================
+
+app.get("/simulate/biometric/execution-checkpoint", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "Badge + Biometric Checkpoint",
+      department: "Secure Access Control",
+      action: "Biometric Execution Checkpoint Verification",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "BIOMETRIC_EXECUTION_CHECKPOINT",
+      environment: "VRI™ Biometric Verification Layer",
+      biometric_state: "MATCH_REQUIRED",
+      badge_verified: true,
+      facial_match_score: "94%",
+      fingerprint_match_score: "97%",
+      supervisor_required: true,
+      biometric_classification: "BADGE_BIOMETRIC_PAIRING",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("Biometric checkpoint simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Biometric checkpoint simulation failed",
+      error: error.message
+    });
+  }
+});
+// =====================================================
+// IMMUTABLE AUDIT LOCK SIMULATION
+// =====================================================
+
+app.get("/simulate/audit/immutable-lock", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "VRI Audit Lock Engine",
+      department: "Immutable Audit Infrastructure",
+      action: "Immutable Audit Record Lock",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "IMMUTABLE_AUDIT_LOCK",
+      environment: "VRI™ Audit Infrastructure",
+      audit_state: "LOCKED",
+      modification_allowed: false,
+      supervisor_required: true,
+      audit_classification: "IMMUTABLE_PROOF_RECORD",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("Immutable audit lock simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Immutable audit lock simulation failed",
+      error: error.message
+    });
+  }
+});
+// =====================================================
+// EXECUTIVE AUTHORITY SIMULATION
+// =====================================================
+
+app.get("/simulate/executive/authority-override", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "Executive Authority Board",
+      department: "Executive Governance",
+      action: "Executive-Level Override Authorization",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "EXECUTIVE_AUTHORITY_OVERRIDE",
+      environment: "Enterprise Executive Governance",
+      authority_state: "MULTI_LEVEL_REVIEW_REQUIRED",
+      executive_approval_required: true,
+      supervisor_required: true,
+      authority_classification: "EXECUTIVE_OVERRIDE_CHAIN",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("Executive authority simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Executive authority simulation failed",
+      error: error.message
+    });
+  }
+});
+// =====================================================
+// MULTI-SUPERVISOR ESCALATION CHAIN SIMULATION
+// =====================================================
+
+app.get("/simulate/escalation/multi-supervisor-chain", async (req, res) => {
+
+  try {
+
+    const payload = {
+      api_key: "VRI_TEST_KEY_001",
+      actor_name: "Regional Operations Supervisor",
+      department: "Enterprise Escalation Operations",
+      action: "Multi-Supervisor Escalation Chain Activation",
+      risk_level: "HIGH"
+    };
+
+    const result = await runVriVerification(payload);
+
+    return res.status(result.httpStatus).json({
+      simulation: "MULTI_SUPERVISOR_ESCALATION_CHAIN",
+      environment: "VRI™ Escalation Infrastructure",
+      escalation_state: "LEVEL_3_ESCALATION_ACTIVE",
+      escalation_chain: [
+        "Supervisor Level 1",
+        "Regional Director",
+        "Executive Governance Board"
+      ],
+      supervisor_required: true,
+      escalation_classification: "CHAINED_ENTERPRISE_ESCALATION",
+      timestamp: new Date().toISOString(),
+      vri_response: result.body
+    });
+
+  } catch (error) {
+
+    console.error("Multi-supervisor escalation simulation error:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Multi-supervisor escalation simulation failed",
+      error: error.message
+    });
+  }
+});
+
+// =====================================================
 // BROWSER TEST ROUTE
 // =====================================================
 
