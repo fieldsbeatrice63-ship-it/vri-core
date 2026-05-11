@@ -174,6 +174,43 @@ async function runVriVerification(payload) {
       }
     };
   }
+    // =====================================================
+  // INSERT ESCALATION RECORD IF REQUIRED
+  // =====================================================
+
+  let escalationData = null;
+
+  if (execution_state === "ESCALATED") {
+    const { data: savedEscalation, error: escalationError } = await supabase
+      .from("execution_escalations")
+      .insert([
+        {
+          proof_id,
+          execution_id,
+          actor_name,
+          department,
+          action,
+          risk_level: normalizedRisk,
+          escalation_status: "OPEN",
+          supervisor_required: true
+        }
+      ])
+      .select();
+
+    if (escalationError) {
+      return {
+        httpStatus: 500,
+        body: {
+          status: "ERROR",
+          message: "execution_escalations insert failed",
+          supabase_error: escalationError.message,
+          details: escalationError
+        }
+      };
+    }
+
+    escalationData = savedEscalation;
+  }
 
   // =====================================================
   // RETURN GOVERNED RESPONSE
@@ -190,14 +227,20 @@ async function runVriVerification(payload) {
       halo_status: "ACTIVE",
       supervisor_required,
       audit_locked: true,
-      database_writes: {
-        execution_sessions: "SAVED",
-        verification_events: "SAVED"
-      },
-      saved_records: {
-        execution_session: sessionData,
-        verification_event: eventData
-      }
+     database_writes: {
+  execution_sessions: "SAVED",
+  verification_events: "SAVED",
+  execution_escalations:
+    execution_state === "ESCALATED"
+      ? "SAVED"
+      : "NOT_REQUIRED"
+},
+
+saved_records: {
+  execution_session: sessionData,
+  verification_event: eventData,
+  escalation: escalationData
+}
     }
   };
 }
