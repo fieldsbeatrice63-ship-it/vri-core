@@ -1,6 +1,40 @@
+const express = require("express");
+const cors = require("cors");
+const { createClient } = require("@supabase/supabase-js");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// =====================================================
+// SUPABASE CONNECTION
+// =====================================================
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// =====================================================
+// HEALTH CHECK
+// =====================================================
+
+app.get("/", (req, res) => {
+  res.json({
+    system: "VRI Verification & Risk Infrastructure",
+    status: "ONLINE",
+    halo: "ACTIVE",
+    shiftguard: "CONNECTED"
+  });
+});
+
+// =====================================================
+// VRI ENTERPRISE VERIFICATION API
+// =====================================================
+
 app.post("/api/vri/verify", async (req, res) => {
   try {
-
     const {
       api_key,
       actor_name,
@@ -9,9 +43,12 @@ app.post("/api/vri/verify", async (req, res) => {
       risk_level
     } = req.body;
 
-    // =====================================================
-    // VALIDATE API KEY
-    // =====================================================
+    if (!api_key) {
+      return res.status(401).json({
+        status: "DENIED",
+        message: "Missing API key"
+      });
+    }
 
     const { data: validKey, error: keyError } = await supabase
       .from("api_keys")
@@ -23,69 +60,41 @@ app.post("/api/vri/verify", async (req, res) => {
     if (keyError || !validKey) {
       return res.status(401).json({
         status: "DENIED",
-        message: "Invalid API Key"
+        message: "Invalid or inactive API key"
       });
     }
 
-    // =====================================================
-    // GENERATE IDS
-    // =====================================================
-
-    const proof_id =
-      "VRI-" + Math.floor(100000 + Math.random() * 900000);
-
-    const execution_id =
-      "EXEC-" + Math.floor(100000 + Math.random() * 900000);
-
-    // =====================================================
-    // HALO GOVERNANCE LOGIC
-    // =====================================================
+    const proof_id = "VRI-" + Date.now();
+    const execution_id = "EXEC-" + Date.now();
 
     let execution_state = "APPROVED";
-    let halo_status = "ACTIVE";
     let supervisor_required = false;
 
-    if (risk_level === "HIGH") {
+    if ((risk_level || "").toUpperCase() === "HIGH") {
       execution_state = "ESCALATED";
       supervisor_required = true;
     }
 
-    // =====================================================
-    // CREATE EXECUTION SESSION
-    // =====================================================
+    await supabase.from("execution_sessions").insert([
+      {
+        execution_id,
+        actor_name,
+        department,
+        action,
+        risk_level,
+        execution_state
+      }
+    ]);
 
-    await supabase
-      .from("execution_sessions")
-      .insert([
-        {
-          execution_id,
-          actor_name,
-          department,
-          action,
-          risk_level,
-          execution_state
-        }
-      ]);
-
-    // =====================================================
-    // CREATE VERIFICATION EVENT
-    // =====================================================
-
-    await supabase
-      .from("verification_events")
-      .insert([
-        {
-          proof_id,
-          execution_id,
-          actor_name,
-          event_type: "API_VERIFICATION",
-          status: execution_state
-        }
-      ]);
-
-    // =====================================================
-    // RETURN GOVERNED RESPONSE
-    // =====================================================
+    await supabase.from("verification_events").insert([
+      {
+        proof_id,
+        execution_id,
+        actor_name,
+        event_type: "API_VERIFICATION",
+        status: execution_state
+      }
+    ]);
 
     return res.json({
       status: "VERIFIED",
@@ -93,13 +102,12 @@ app.post("/api/vri/verify", async (req, res) => {
       proof_id,
       execution_id,
       execution_state,
-      halo_status,
+      halo_status: "ACTIVE",
       supervisor_required,
       audit_locked: true
     });
 
   } catch (error) {
-
     console.error("VRI API ERROR:", error);
 
     return res.status(500).json({
@@ -107,4 +115,14 @@ app.post("/api/vri/verify", async (req, res) => {
       message: "VRI infrastructure failure"
     });
   }
+});
+
+// =====================================================
+// START SERVER
+// =====================================================
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`VRI API infrastructure running on port ${PORT}`);
 });
