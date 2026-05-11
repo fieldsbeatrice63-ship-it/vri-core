@@ -265,6 +265,88 @@ app.post("/api/vri/verify", async (req, res) => {
 });
 
 // =====================================================
+// VRI AUDIT RETRIEVAL API
+// =====================================================
+
+app.get("/api/vri/audit/:proof_id", async (req, res) => {
+  try {
+    const { proof_id } = req.params;
+
+    if (!proof_id) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Missing proof_id"
+      });
+    }
+
+    const { data: verificationEvents, error: verificationError } = await supabase
+      .from("verification_events")
+      .select("*")
+      .eq("proof_id", proof_id)
+      .order("created_at", { ascending: false });
+
+    if (verificationError) {
+      return res.status(500).json({
+        status: "ERROR",
+        message: "Failed to load verification events",
+        supabase_error: verificationError.message
+      });
+    }
+
+    const { data: executionSessions, error: executionError } = await supabase
+      .from("execution_sessions")
+      .select("*")
+      .eq("proof_id", proof_id)
+      .order("execution_started_at", { ascending: false });
+
+    if (executionError) {
+      return res.status(500).json({
+        status: "ERROR",
+        message: "Failed to load execution sessions",
+        supabase_error: executionError.message
+      });
+    }
+
+    const { data: escalations, error: escalationError } = await supabase
+      .from("execution_escalations")
+      .select("*")
+      .eq("proof_id", proof_id)
+      .order("created_at", { ascending: false });
+
+    if (escalationError) {
+      return res.status(500).json({
+        status: "ERROR",
+        message: "Failed to load escalation records",
+        supabase_error: escalationError.message
+      });
+    }
+
+    return res.json({
+      status: "AUDIT_FOUND",
+      proof_id,
+      audit_locked: true,
+      halo_status: "ACTIVE",
+      verification_events: verificationEvents || [],
+      execution_sessions: executionSessions || [],
+      escalations: escalations || [],
+      audit_summary: {
+        verification_event_count: verificationEvents ? verificationEvents.length : 0,
+        execution_session_count: executionSessions ? executionSessions.length : 0,
+        escalation_count: escalations ? escalations.length : 0
+      }
+    });
+
+  } catch (error) {
+    console.error("VRI AUDIT API ERROR:", error);
+
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Audit retrieval failed",
+      error: error.message
+    });
+  }
+});
+// =====================================================
 // BROWSER TEST ROUTE
 // =====================================================
 
