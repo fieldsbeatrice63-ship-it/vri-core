@@ -121,7 +121,68 @@ app.post("/api/vri/verify", async (req, res) => {
 // START SERVER
 // =====================================================
 
+app.get("/test-vri", async (req, res) => {
+  const testPayload = {
+    api_key: "VRI_TEST_KEY_001",
+    actor_name: "Nurse A",
+    department: "ICU",
+    action: "Controlled Medication Override",
+    risk_level: "HIGH"
+  };
+
+  try {
+    const response = await fetch(`http://localhost:${PORT}/api/vri/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(testPayload)
+    });
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      status: "FAILED",
+      message: "Test route failed"
+    });
+  }
+});
 const PORT = process.env.PORT || 3000;
+
+app.get("/test-vri", async (req, res) => {
+  const testPayload = {
+    api_key: "VRI_TEST_KEY_001",
+    actor_name: "Nurse A",
+    department: "ICU",
+    action: "Controlled Medication Override",
+    risk_level: "HIGH"
+  };
+
+  try {
+    const response = await fetch(`http://localhost:${PORT}/api/vri/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(testPayload)
+    });
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      status: "FAILED",
+      message: "Test route failed"
+    });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`VRI API infrastructure running on port ${PORT}`);
