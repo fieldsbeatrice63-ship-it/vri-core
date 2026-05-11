@@ -124,6 +124,7 @@ async function runVriVerification(payload) {
     .from("execution_sessions")
     .insert([
       {
+        proof_id,
         execution_id,
         actor_name,
         department,
