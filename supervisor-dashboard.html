@@ -430,8 +430,11 @@ async function loadEscalations() {
     return;
   }
 
-  escalationContainer.innerHTML = data.map(item => `
-    <div style="
+ escalationContainer.innerHTML = data.map(item => `
+    <div
+  onclick="window.location.href='/incident-file.html?proof=' + encodeURIComponent('${item.proof_id || ""}')"
+  style="
+  cursor:pointer;
       background:rgba(0,20,40,0.9);
       border:1px solid rgba(0,255,255,0.25);
       border-left:4px solid #ff4444;
