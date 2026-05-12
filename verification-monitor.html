@@ -17,7 +17,7 @@
   --cyan: #00c8ff;
   --blue: #1e8fff;
   --green: #00ff99;
-  --orange: #ff9f1c;
+  --orange: #ffcc00;
   --red: #ff3c3c;
   --text: #e8f4ff;
   --muted: #8fbfff;
@@ -30,6 +30,20 @@ body {
   font-family: "Courier New", monospace;
   min-height: 100vh;
   overflow: hidden;
+}
+
+.nav {
+  position:absolute;
+  top:15px;
+  right:20px;
+  z-index:999;
+  font-size:12px;
+}
+
+.nav a {
+  color:#8fbfff;
+  margin-right:15px;
+  text-decoration:none;
 }
 
 .screen {
@@ -145,14 +159,30 @@ body {
   border-color: var(--cyan);
 }
 
-.feed-item.green,
-.record-item.green { border-left: 5px solid var(--green); }
+.record-item.risk-low,
+.feed-item.risk-low {
+  border-left: 6px solid var(--green);
+  box-shadow:
+    0 0 18px rgba(0,255,153,.18),
+    inset 0 0 14px rgba(0,255,153,.06);
+}
 
-.feed-item.orange,
-.record-item.orange { border-left: 5px solid var(--orange); }
+.record-item.risk-medium,
+.feed-item.risk-medium {
+  border-left: 6px solid var(--orange);
+  box-shadow:
+    0 0 18px rgba(255,204,0,.2),
+    inset 0 0 14px rgba(255,204,0,.07);
+}
 
-.feed-item.red,
-.record-item.red { border-left: 5px solid var(--red); }
+.record-item.risk-high,
+.feed-item.risk-high {
+  border-left: 6px solid var(--red);
+  box-shadow:
+    0 0 22px rgba(255,60,60,.28),
+    inset 0 0 16px rgba(255,60,60,.1);
+  animation: riskPulse 1.8s infinite ease-in-out;
+}
 
 .feed-title {
   font-weight: bold;
@@ -163,7 +193,8 @@ body {
 .feed-meta {
   font-size: 11px;
   color: var(--muted);
-  line-height: 1.5;
+  line-height: 1.6;
+  word-break: break-word;
 }
 
 .center {
@@ -185,6 +216,25 @@ body {
   border-radius: 12px;
   padding: 18px;
   text-align: center;
+}
+
+.stat-card.low {
+  border-color: rgba(0,255,153,.55);
+  box-shadow: 0 0 16px rgba(0,255,153,.15);
+}
+
+.stat-card.medium {
+  border-color: rgba(255,204,0,.6);
+  box-shadow: 0 0 16px rgba(255,204,0,.18);
+}
+
+.stat-card.high {
+  border-color: rgba(255,60,60,.65);
+  box-shadow: 0 0 18px rgba(255,60,60,.22);
+}
+
+.stat-card.total {
+  border-color: rgba(0,200,255,.6);
 }
 
 .stat-card strong {
@@ -268,15 +318,22 @@ body {
   left: 50%;
   bottom: 28px;
   transform: translateX(-50%);
-  border: 1px solid var(--red);
-  background: rgba(255,60,60,0.12);
-  color: #ffb1b1;
+  border: 1px solid var(--green);
+  background: rgba(0,255,153,0.1);
+  color: #9fffd4;
   border-radius: 12px;
   padding: 16px 34px;
   font-weight: bold;
   letter-spacing: 2px;
+  box-shadow: 0 0 20px rgba(0,255,153,0.2);
+}
+
+.alert.high-active {
+  border-color: var(--red);
+  background: rgba(255,60,60,0.14);
+  color: #ffb1b1;
   animation: blink 1.5s infinite;
-  box-shadow: 0 0 20px rgba(255,60,60,0.25);
+  box-shadow: 0 0 24px rgba(255,60,60,0.28);
 }
 
 .lower {
@@ -321,28 +378,34 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+  align-items: flex-start;
 }
 
 .badge {
   font-size: 10px;
-  padding: 4px 8px;
+  padding: 5px 9px;
   border-radius: 999px;
   white-space: nowrap;
+  font-weight: bold;
+  letter-spacing: 1px;
 }
 
-.badge.green {
+.badge.low {
   color: var(--green);
   border: 1px solid var(--green);
+  background: rgba(0,255,153,.08);
 }
 
-.badge.orange {
+.badge.medium {
   color: var(--orange);
   border: 1px solid var(--orange);
+  background: rgba(255,204,0,.08);
 }
 
-.badge.red {
+.badge.high {
   color: var(--red);
   border: 1px solid var(--red);
+  background: rgba(255,60,60,.08);
 }
 
 .footer {
@@ -366,70 +429,50 @@ body {
   50% { opacity: 0.45; }
 }
 
+@keyframes riskPulse {
+  0%,100% { box-shadow: 0 0 18px rgba(255,60,60,.22), inset 0 0 14px rgba(255,60,60,.08); }
+  50% { box-shadow: 0 0 34px rgba(255,60,60,.42), inset 0 0 20px rgba(255,60,60,.13); }
+}
+
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 3px; }
 
+@media(max-width: 1050px) {
+  body { overflow: auto; }
 
-  /* =========================================
-   HALO RISK CARD STATES
-========================================= */
+  .screen {
+    height: auto;
+    min-height: 100vh;
+    grid-template-rows: auto auto auto;
+  }
 
-/* LOW RISK */
-.risk-low {
-  border: 1px solid rgba(0,255,153,.65) !important;
-  box-shadow:
-    0 0 14px rgba(0,255,153,.18),
-    inset 0 0 12px rgba(0,255,153,.05);
-}
+  .main {
+    grid-template-columns: 1fr;
+  }
 
-/* MEDIUM RISK */
-.risk-medium {
-  border: 1px solid rgba(255,204,0,.70) !important;
-  box-shadow:
-    0 0 16px rgba(255,204,0,.18),
-    inset 0 0 12px rgba(255,204,0,.06);
-}
+  .center {
+    grid-template-rows: auto 420px auto;
+  }
 
-/* HIGH RISK */
-.risk-high {
-  border: 1px solid rgba(255,70,70,.75) !important;
-  box-shadow:
-    0 0 18px rgba(255,70,70,.22),
-    inset 0 0 14px rgba(255,70,70,.07);
-}
-
-/* Badge States */
-.badge-low {
-  color: #00ff99 !important;
-  border-color: #00ff99 !important;
-}
-
-.badge-medium {
-  color: #ffcc00 !important;
-  border-color: #ffcc00 !important;
-}
-
-.badge-high {
-  color: #ff5c5c !important;
-  border-color: #ff5c5c !important;
+  .stats,
+  .lower {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 </head>
 
 <body>
 
-
-  <div style="position:absolute; top:15px; right:20px; z-index:999; font-size:12px;">
-
-  <a href="/index.html" style="color:#8fbfff; margin-right:15px;">System</a>
-
-  <a href="/proof-portal.html" style="color:#8fbfff; margin-right:15px;">Create Proof</a>
-
-  <a href="/receipt.html" style="color:#8fbfff; margin-right:15px;">Receipt</a>
-
-  <a href="/verification-monitor.html" style="color:#8fbfff;">Monitor</a>
-
+<div class="nav">
+  <a href="/index.html">System</a>
+  <a href="/proof-portal.html">Create Proof</a>
+  <a href="/verify-proof.html">Verify Proof</a>
+  <a href="/receipt.html">Receipt</a>
+  <a href="/verification-monitor.html">Monitor</a>
+  <a href="/supervisor-dashboard.html">Supervisor</a>
 </div>
+
 <div class="screen">
 
   <header class="header">
@@ -458,22 +501,22 @@ body {
 
     <section class="center">
       <div class="stats">
-        <div class="stat-card">
-          <strong id="verifiedCount" style="color:var(--green);">0</strong>
-          <span>VERIFIED RECORDS</span>
+        <div class="stat-card low">
+          <strong id="lowCount" style="color:var(--green);">0</strong>
+          <span>LOW RISK</span>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card medium">
           <strong id="mediumCount" style="color:var(--orange);">0</strong>
           <span>MEDIUM RISK</span>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card high">
           <strong id="highCount" style="color:var(--red);">0</strong>
           <span>HIGH RISK</span>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card total">
           <strong id="totalCount" style="color:var(--cyan);">0</strong>
           <span>TOTAL RECORDS</span>
         </div>
@@ -483,11 +526,11 @@ body {
         <div class="grid"></div>
         <div class="vri-core">
           <h2>VRI™</h2>
-          <p>VERIFICATION SYSTEM</p>
-          <p style="font-size:11px;">TRUSTED · SECURE · VERIFIED</p>
+          <p>RISK MONITOR</p>
+          <p style="font-size:11px;">LOW · MEDIUM · HIGH</p>
         </div>
 
-        <div class="alert">⚠ RECORD INCONSISTENCY MONITOR ACTIVE</div>
+        <div id="riskAlert" class="alert">RISK MONITOR ACTIVE · NO HIGH RISK ALERT</div>
       </div>
 
       <div class="lower">
@@ -524,16 +567,16 @@ body {
     </section>
 
     <section class="panel">
-      <div class="panel-title">PROOF RECORDS</div>
+      <div class="panel-title">PROOF RECORDS · HALO RISK</div>
       <div class="feed" id="recordList"></div>
     </section>
 
   </main>
 
   <footer class="footer">
-    <span>VRI™ VERIFICATION & RECEIPT INTELLIGENCE SYSTEM</span>
+    <span>VRI™ VERIFICATION & RISK INFRASTRUCTURE</span>
     <span>AUDIT TRAIL: ACTIVE</span>
-    <span>DATA ENCRYPTION: ENABLED</span>
+    <span>HALO RISK: LOW · MEDIUM · HIGH</span>
   </footer>
 
 </div>
@@ -547,10 +590,34 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
-function riskFromEvents(eventCount) {
-  if (eventCount >= 4) return { level: "LOW RISK", color: "green" };
-  if (eventCount >= 2) return { level: "MEDIUM RISK", color: "orange" };
-  return { level: "HIGH RISK", color: "red" };
+function normalizeRisk(level) {
+  const risk = (level || "LOW").toUpperCase();
+
+  if (risk === "HIGH") return "HIGH";
+  if (risk === "MEDIUM") return "MEDIUM";
+  return "LOW";
+}
+
+function riskClass(level) {
+  const risk = normalizeRisk(level);
+
+  if (risk === "HIGH") return "risk-high";
+  if (risk === "MEDIUM") return "risk-medium";
+  return "risk-low";
+}
+
+function riskBadge(level) {
+  const risk = normalizeRisk(level);
+
+  if (risk === "HIGH") {
+    return "<span class='badge high'>HIGH RISK</span>";
+  }
+
+  if (risk === "MEDIUM") {
+    return "<span class='badge medium'>MEDIUM RISK</span>";
+  }
+
+  return "<span class='badge low'>LOW RISK</span>";
 }
 
 function openReceipt(proofId) {
@@ -561,6 +628,7 @@ async function loadMonitor() {
   const activityFeed = document.getElementById("activityFeed");
   const recordList = document.getElementById("recordList");
   const industryList = document.getElementById("industryList");
+  const riskAlert = document.getElementById("riskAlert");
 
   activityFeed.innerHTML = "Loading activity...";
   recordList.innerHTML = "Loading records...";
@@ -570,13 +638,13 @@ async function loadMonitor() {
     .from("proof_records")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(12);
+    .limit(20);
 
   const { data: events, error: eventError } = await supabaseClient
     .from("verification_events")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(80);
+    .limit(100);
 
   if (proofError || eventError) {
     activityFeed.innerHTML = "Error loading monitor data.";
@@ -587,53 +655,45 @@ async function loadMonitor() {
   const allProofs = proofs || [];
   const allEvents = events || [];
 
-  let low = 0, medium = 0, high = 0;
+  let low = 0;
+  let medium = 0;
+  let high = 0;
+
   const industryCounts = {};
 
   recordList.innerHTML = "";
 
- allProofs.forEach(record => {
-
-    let riskClass = "risk-low";
-    let badgeClass = "badge-low";
-
-    if (record.halo_risk_level === "MEDIUM") {
-      riskClass = "risk-medium";
-      badgeClass = "badge-medium";
-    }
-
-    if (record.halo_risk_level === "HIGH") {
-      riskClass = "risk-high";
-      badgeClass = "badge-high";
-    }
-
+  allProofs.forEach(record => {
+    const haloRisk = normalizeRisk(record.halo_risk_level);
     const proofEvents = allEvents.filter(e => e.proof_id === record.proof_id);
-    const risk = riskFromEvents(proofEvents.length);
 
-    if (risk.color === "green") low++;
-    if (risk.color === "orange") medium++;
-    if (risk.color === "red") high++;
+    if (haloRisk === "LOW") low++;
+    if (haloRisk === "MEDIUM") medium++;
+    if (haloRisk === "HIGH") high++;
 
     const industry = record.industry || "general";
     industryCounts[industry] = (industryCounts[industry] || 0) + 1;
 
     const card = document.createElement("div");
-    card.className = "record-item " + risk.color + " " + riskClass;
+    card.className = "record-item " + riskClass(haloRisk);
     card.onclick = () => openReceipt(record.proof_id);
 
     card.innerHTML = `
       <div class="record-header">
         <strong>${record.proof_id}</strong>
-       <span class="badge ${risk.color} ${badgeClass}">
-  ${record.halo_risk_level ? record.halo_risk_level + " RISK" : risk.level}
-</span>
-
+        ${riskBadge(haloRisk)}
       </div>
       <div class="feed-meta">
         Status: ${record.status || "VERIFIED"}<br>
         Industry: ${industry}<br>
+        HALO Status: ${record.halo_status || "N/A"}<br>
+        HALO Confidence: ${record.halo_confidence_score || "N/A"}${record.halo_confidence_score ? "%" : ""}<br>
+        ShiftGuard: ${record.shiftguard_status || "N/A"} · ${record.shiftguard_mode || "N/A"}<br>
+        Hash Status: ${record.hash_status || "N/A"}<br>
+        Document Changed: ${record.document_changed === true ? "YES" : "NO"}<br>
+        AI Status: ${record.ai_content_status || "NOT_USED"}<br>
         Events Recorded: ${proofEvents.length}<br>
-        ${record.created_at ? new Date(record.created_at).toLocaleString() : ""}
+        Created: ${record.created_at ? new Date(record.created_at).toLocaleString() : "N/A"}
       </div>
     `;
 
@@ -642,34 +702,61 @@ async function loadMonitor() {
 
   activityFeed.innerHTML = "";
 
-  allEvents.slice(0, 10).forEach(event => {
-    let color = "green";
-    if (event.event_type.includes("SENT")) color = "orange";
-    if (event.event_type.includes("MISMATCH") || event.event_type.includes("VARIANCE")) color = "red";
+  allEvents.slice(0, 14).forEach(event => {
+    let eventRisk = "LOW";
+
+    if (
+      (event.status || "").toUpperCase() === "HIGH" ||
+      (event.status || "").toUpperCase() === "ESCALATED" ||
+      (event.event_type || "").includes("SUPERVISOR") ||
+      (event.event_type || "").includes("FAILED") ||
+      (event.event_note || "").includes("HIGH")
+    ) {
+      eventRisk = "HIGH";
+    } else if (
+      (event.status || "").toUpperCase() === "MEDIUM" ||
+      (event.event_type || "").includes("SENT") ||
+      (event.event_type || "").includes("DELIVERY")
+    ) {
+      eventRisk = "MEDIUM";
+    }
 
     const item = document.createElement("div");
-    item.className = "feed-item " + color;
+    item.className = "feed-item " + riskClass(eventRisk);
     item.onclick = () => openReceipt(event.proof_id);
 
     item.innerHTML = `
-      <div class="feed-title">${event.event_type}</div>
+      <div class="feed-title">
+        ${event.event_type || "EVENT"} ${riskBadge(eventRisk)}
+      </div>
       <div class="feed-meta">
-        Proof ID: ${event.proof_id}<br>
+        Proof ID: ${event.proof_id || "N/A"}<br>
         ${event.event_note || "Verification event recorded"}<br>
-        ${event.created_at ? new Date(event.created_at).toLocaleString() : ""}
+        ${event.created_at ? new Date(event.created_at).toLocaleString() : "N/A"}
       </div>
     `;
 
     activityFeed.appendChild(item);
   });
 
-  document.getElementById("verifiedCount").textContent = low;
+  document.getElementById("lowCount").textContent = low;
   document.getElementById("mediumCount").textContent = medium;
   document.getElementById("highCount").textContent = high;
   document.getElementById("totalCount").textContent = allProofs.length;
 
-  const health = allProofs.length ? Math.max(70, Math.round((low / allProofs.length) * 100)) : 98;
+  const health = allProofs.length
+    ? Math.max(50, Math.round(((low + medium * 0.65) / allProofs.length) * 100))
+    : 98;
+
   document.getElementById("healthPercent").textContent = health + "%";
+
+  if (high > 0) {
+    riskAlert.className = "alert high-active";
+    riskAlert.textContent = "⚠ HIGH RISK ACTIVE · " + high + " RECORD(S) REQUIRE REVIEW";
+  } else {
+    riskAlert.className = "alert";
+    riskAlert.textContent = "RISK MONITOR ACTIVE · NO HIGH RISK ALERT";
+  }
 
   industryList.innerHTML = Object.entries(industryCounts)
     .map(([name, count]) => `${name.toUpperCase()} <span>${count}</span>`)
