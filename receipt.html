@@ -207,6 +207,19 @@ pre {
   flex: 1;
 }
 
+.delivery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.delivery-grid button {
+  width: 100%;
+  font-size: 11px;
+  padding: 12px 8px;
+}
+
 @media(max-width: 760px) {
   body {
     padding: 24px;
@@ -218,7 +231,9 @@ pre {
   }
 
   .lookup-row,
-  .action-row {
+  .action-row,
+  .delivery-grid {
+    grid-template-columns: 1fr;
     flex-direction: column;
   }
 }
@@ -289,7 +304,7 @@ pre {
     <div class="subtitle">
       This receipt represents a verified record of a document event captured in the VRI system.
       It includes creation data, sender and recipient details, document integrity, AI disclosure,
-      HALO governance, ShiftGuard Clinical execution readiness, and a complete audit trail tied to this Proof ID.
+      HALO governance, ShiftGuard Clinical execution readiness, delivery lifecycle, and a complete audit trail tied to this Proof ID.
     </div>
 
     <div class="receipt-badge">
@@ -326,26 +341,42 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
+let currentProofId = "";
+
 function yesNo(value) {
   return value === true ? "YES" : "NO";
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString() : "N/A";
 }
 
 function riskBadge(level) {
   const risk = (level || "N/A").toUpperCase();
 
-  if (risk === "LOW") {
-    return "<span class='badge badge-green'>LOW RISK</span>";
-  }
-
-  if (risk === "MEDIUM") {
-    return "<span class='badge badge-yellow'>MEDIUM RISK</span>";
-  }
-
-  if (risk === "HIGH") {
-    return "<span class='badge badge-red'>HIGH RISK</span>";
-  }
+  if (risk === "LOW") return "<span class='badge badge-green'>LOW RISK</span>";
+  if (risk === "MEDIUM") return "<span class='badge badge-yellow'>MEDIUM RISK</span>";
+  if (risk === "HIGH") return "<span class='badge badge-red'>HIGH RISK</span>";
 
   return "<span class='badge badge-yellow'>N/A</span>";
+}
+
+function deliveryBadge(status) {
+  const value = (status || "PENDING").toUpperCase();
+
+  if (value === "CONFIRMED" || value === "RECEIVED" || value === "OPENED_VIEWED") {
+    return "<span class='badge badge-green'>" + value + "</span>";
+  }
+
+  if (value === "SENT" || value === "RESENT" || value === "PENDING") {
+    return "<span class='badge badge-yellow'>" + value + "</span>";
+  }
+
+  if (value === "FAILED") {
+    return "<span class='badge badge-red'>FAILED</span>";
+  }
+
+  return "<span class='badge badge-yellow'>" + value + "</span>";
 }
 
 function aiBadge(documentRecord) {
@@ -360,6 +391,101 @@ function aiBadge(documentRecord) {
   return "<span class='badge badge-red'>AI USED · NOT HUMAN REVIEWED</span>";
 }
 
+function deliveryMeta(action) {
+  const map = {
+    SENT: {
+      status: "SENT",
+      eventType: "DELIVERY_SENT",
+      column: "sent_at",
+      note: "Document marked as sent."
+    },
+    RECEIVED: {
+      status: "RECEIVED",
+      eventType: "DELIVERY_RECEIVED",
+      column: "received_at",
+      note: "Document marked as received."
+    },
+    OPENED_VIEWED: {
+      status: "OPENED_VIEWED",
+      eventType: "DELIVERY_OPENED_VIEWED",
+      column: "opened_at",
+      note: "Document marked as opened/viewed."
+    },
+    CONFIRMED: {
+      status: "CONFIRMED",
+      eventType: "DELIVERY_CONFIRMED",
+      column: "confirmed_at",
+      note: "Recipient confirmation recorded."
+    },
+    RESENT: {
+      status: "RESENT",
+      eventType: "DELIVERY_RESENT",
+      column: "resent_at",
+      note: "Document marked as re-sent."
+    },
+    FAILED: {
+      status: "FAILED",
+      eventType: "DELIVERY_FAILED",
+      column: "failed_at",
+      note: "Delivery marked as failed."
+    }
+  };
+
+  return map[action];
+}
+
+async function markDelivery(action) {
+  if (!currentProofId) {
+    alert("Load a receipt first.");
+    return;
+  }
+
+  const meta = deliveryMeta(action);
+
+  if (!meta) {
+    alert("Unknown delivery action.");
+    return;
+  }
+
+  const timestamp = new Date().toISOString();
+
+  const updatePayload = {
+    delivery_status: meta.status,
+    last_delivery_event_at: timestamp,
+    delivery_note: meta.note
+  };
+
+  updatePayload[meta.column] = timestamp;
+
+  const { error: updateError } = await supabaseClient
+    .from("recipients")
+    .update(updatePayload)
+    .eq("proof_id", currentProofId);
+
+  if (updateError) {
+    alert("Delivery update failed: " + updateError.message);
+    return;
+  }
+
+  const { error: eventError } = await supabaseClient
+    .from("verification_events")
+    .insert([{
+      proof_id: currentProofId,
+      event_type: meta.eventType,
+      event_note:
+        meta.note +
+        " | Delivery Status: " + meta.status +
+        " | Timestamp: " + timestamp
+    }]);
+
+  if (eventError) {
+    alert("Delivery event failed: " + eventError.message);
+    return;
+  }
+
+  await loadReceipt();
+}
+
 async function loadReceipt() {
   const proofId = document.getElementById("proofInput").value.trim();
   const output = document.getElementById("output");
@@ -369,6 +495,7 @@ async function loadReceipt() {
     return;
   }
 
+  currentProofId = proofId;
   output.innerHTML = `<div class="card blue">Searching VRI proof record...</div>`;
 
   try {
@@ -421,7 +548,7 @@ async function loadReceipt() {
       <div class="event">
         <strong>${event.event_type || "EVENT"}</strong><br>
         ${event.event_note || "No event note available."}<br>
-        <span class="small">${event.created_at ? new Date(event.created_at).toLocaleString() : "N/A"}</span>
+        <span class="small">${formatDate(event.created_at)}</span>
       </div>
     `).join("");
 
@@ -432,7 +559,7 @@ async function loadReceipt() {
         <p><span class="blue">Proof Status:</span> ${proofRecord?.status || "VERIFIED"}</p>
         <p><span class="blue">Industry:</span> ${proofRecord?.industry || "general"}</p>
         <p><span class="blue">Receipt Status:</span> ${receiptRecord?.receipt_status || "GENERATED"}</p>
-        <p><span class="blue">Receipt Created:</span> ${receiptRecord?.created_at ? new Date(receiptRecord.created_at).toLocaleString() : "N/A"}</p>
+        <p><span class="blue">Receipt Created:</span> ${formatDate(receiptRecord?.created_at)}</p>
       </div>
 
       <div class="card">
@@ -444,10 +571,27 @@ async function loadReceipt() {
       </div>
 
       <div class="card">
-        <h3>Recipient</h3>
+        <h3>Recipient + Delivery Lifecycle</h3>
         <p><span class="blue">Name:</span> ${recipientRecord?.recipient_name || documentRecord?.recipient_name || "N/A"}</p>
         <p><span class="blue">Email:</span> ${recipientRecord?.recipient_email || documentRecord?.recipient_email || "N/A"}</p>
-        <p><span class="blue">Delivery Status:</span> ${recipientRecord?.delivery_status || "PENDING"}</p>
+        <p><span class="blue">Delivery Status:</span> ${deliveryBadge(recipientRecord?.delivery_status || "PENDING")}</p>
+        <p><span class="blue">Sent At:</span> ${formatDate(recipientRecord?.sent_at)}</p>
+        <p><span class="blue">Received At:</span> ${formatDate(recipientRecord?.received_at)}</p>
+        <p><span class="blue">Opened / Viewed At:</span> ${formatDate(recipientRecord?.opened_at)}</p>
+        <p><span class="blue">Confirmed At:</span> ${formatDate(recipientRecord?.confirmed_at)}</p>
+        <p><span class="blue">Re-Sent At:</span> ${formatDate(recipientRecord?.resent_at)}</p>
+        <p><span class="blue">Failed At:</span> ${formatDate(recipientRecord?.failed_at)}</p>
+        <p><span class="blue">Last Delivery Event:</span> ${formatDate(recipientRecord?.last_delivery_event_at)}</p>
+        <p><span class="blue">Delivery Note:</span> ${recipientRecord?.delivery_note || "No delivery update recorded yet."}</p>
+
+        <div class="delivery-grid">
+          <button onclick="markDelivery('SENT')">MARK SENT</button>
+          <button onclick="markDelivery('RECEIVED')">MARK RECEIVED</button>
+          <button onclick="markDelivery('OPENED_VIEWED')">MARK OPENED / VIEWED</button>
+          <button onclick="markDelivery('CONFIRMED')">MARK CONFIRMED</button>
+          <button onclick="markDelivery('RESENT')">MARK RE-SENT</button>
+          <button onclick="markDelivery('FAILED')">MARK FAILED</button>
+        </div>
       </div>
 
       <div class="card">
@@ -455,7 +599,7 @@ async function loadReceipt() {
         <p><span class="blue">Title:</span> ${documentRecord?.document_title || "Untitled Document"}</p>
         <p><span class="blue">Type:</span> ${documentRecord?.document_type || "proof_document"}</p>
         <p><span class="blue">Status:</span> ${documentRecord?.status || "CREATED"}</p>
-        <p><span class="blue">Created:</span> ${documentRecord?.created_at ? new Date(documentRecord.created_at).toLocaleString() : "N/A"}</p>
+        <p><span class="blue">Created:</span> ${formatDate(documentRecord?.created_at)}</p>
 
         <h3>Document Integrity</h3>
         <p><span class="blue">Hash Algorithm:</span> ${documentRecord?.hash_algorithm || proofRecord?.hash_algorithm || "SHA-256"}</p>
@@ -464,7 +608,7 @@ async function loadReceipt() {
         <p><span class="blue">Current Hash:</span> ${documentRecord?.current_hash || "N/A"}</p>
         <p><span class="blue">Hash Status:</span> ${documentRecord?.hash_status || proofRecord?.hash_status || "N/A"}</p>
         <p><span class="blue">Document Changed:</span> ${(documentRecord?.document_changed === true || proofRecord?.document_changed === true) ? "YES" : "NO"}</p>
-        <p><span class="blue">Fingerprint Created:</span> ${documentRecord?.fingerprint_created_at ? new Date(documentRecord.fingerprint_created_at).toLocaleString() : "N/A"}</p>
+        <p><span class="blue">Fingerprint Created:</span> ${formatDate(documentRecord?.fingerprint_created_at)}</p>
 
         <h3>AI Content Disclosure</h3>
         <p>${aiBadge(documentRecord || proofRecord)}</p>
@@ -473,7 +617,7 @@ async function loadReceipt() {
         <p><span class="blue">Human Reviewed:</span> ${(documentRecord?.human_reviewed === false || proofRecord?.human_reviewed === false) ? "NO" : "YES"}</p>
         <p><span class="blue">AI Content Status:</span> ${documentRecord?.ai_content_status || proofRecord?.ai_content_status || "NOT_USED"}</p>
         <p><span class="blue">AI Disclosure Note:</span> ${documentRecord?.ai_disclosure_note || proofRecord?.ai_disclosure_note || "No AI assistance disclosed."}</p>
-        <p><span class="blue">AI Disclosure Recorded:</span> ${documentRecord?.ai_disclosed_at ? new Date(documentRecord.ai_disclosed_at).toLocaleString() : proofRecord?.ai_disclosed_at ? new Date(proofRecord.ai_disclosed_at).toLocaleString() : "N/A"}</p>
+        <p><span class="blue">AI Disclosure Recorded:</span> ${documentRecord?.ai_disclosed_at ? formatDate(documentRecord.ai_disclosed_at) : proofRecord?.ai_disclosed_at ? formatDate(proofRecord.ai_disclosed_at) : "N/A"}</p>
 
         <h3>Document Content</h3>
         <pre>${documentRecord?.document_content || "No document content available."}</pre>
