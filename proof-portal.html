@@ -192,9 +192,10 @@ SIMULATE HOSPITAL EXECUTION
 
 
 
+
 <script>
 const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhdG9rbHlnaXFoeWZ1b3JodG1mbCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzc3MzI2NDEyLCJleHAiOjIwOTI5MDI0MTJ9.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
@@ -214,6 +215,7 @@ function verifyEmailLight(email) {
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (!cleanedEmail) return { status: "MISSING", verified_at: "" };
+
   if (!emailPattern.test(cleanedEmail)) {
     return { status: "INVALID_FORMAT", verified_at: new Date().toISOString() };
   }
@@ -226,6 +228,7 @@ function verifyPhoneLight(phone) {
   const digitsOnly = cleanedPhone.replace(/\D/g, "");
 
   if (!cleanedPhone) return { status: "MISSING", verified_at: "" };
+
   if (digitsOnly.length < 10) {
     return { status: "INVALID_FORMAT", verified_at: new Date().toISOString() };
   }
@@ -237,9 +240,11 @@ function getBadge(status) {
   if (status === "FORMAT_VERIFIED") {
     return "<span class='badge badge-green'>✔ VERIFIED</span>";
   }
+
   if (status === "INVALID_FORMAT") {
     return "<span class='badge badge-yellow'>⚠ INVALID</span>";
   }
+
   return "<span class='badge badge-red'>✖ MISSING</span>";
 }
 
@@ -288,8 +293,8 @@ function runHaloGovernance(emailStatus, phoneStatus, businessName, verificationI
   if (score < 50) riskLevel = "HIGH";
 
   const governanceNote = issues.length === 0
-    ? "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, and receipt readiness. No major governance concerns were detected."
-    : "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, and receipt readiness. Review needed because: " + issues.join(", ") + ".";
+    ? "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, document fingerprint, and receipt readiness. No major governance concerns were detected."
+    : "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, document fingerprint, and receipt readiness. Review needed because: " + issues.join(", ") + ".";
 
   return {
     status: "GOVERNED",
@@ -303,9 +308,11 @@ function getHaloBadge(halo) {
   if (halo.risk_level === "LOW") {
     return "<span class='badge badge-green'>🛡 HALO GOVERNED · LOW RISK · " + halo.confidence_score + "%</span>";
   }
+
   if (halo.risk_level === "MEDIUM") {
     return "<span class='badge badge-yellow'>🛡 HALO GOVERNED · MEDIUM RISK · " + halo.confidence_score + "%</span>";
   }
+
   return "<span class='badge badge-red'>🛡 HALO GOVERNED · HIGH RISK · " + halo.confidence_score + "%</span>";
 }
 
@@ -314,12 +321,55 @@ function runShiftGuardExecutionLayer(source, halo) {
     status: "STANDBY",
     mode: "READY",
     execution_note:
-      "SHIFTGuard reviewed execution readiness for this proof flow. No live enforcement was triggered. Execution accountability layer is available if this proof requires action control."
+      "ShiftGuard Clinical reviewed execution readiness for this proof flow. No live enforcement was triggered. Execution accountability layer is available if this proof requires action control."
   };
 }
 
 function getShiftGuardBadge(shiftguard) {
-  return "<span class='badge badge-green'>⚙ SHIFTGuard READY · " + shiftguard.status + "</span>";
+  return "<span class='badge badge-green'>⚙ ShiftGuard Clinical READY · " + shiftguard.status + "</span>";
+}
+
+// =====================================================
+// VRI DOCUMENT FINGERPRINT / HASH LOGIC
+// Creates a SHA-256 fingerprint for proof integrity
+// =====================================================
+
+async function createSha256Hash(value) {
+  if (!window.crypto || !window.crypto.subtle) {
+    throw new Error("Secure browser crypto is not available. Document fingerprint could not be created.");
+  }
+
+  const encoder = new TextEncoder();
+  const data = encoder.encode(value);
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function createDocumentFingerprint(documentTitle, documentContent) {
+  const normalizedDocument = JSON.stringify({
+    document_title: cleanValue(documentTitle, "Untitled Document"),
+    document_content: cleanValue(documentContent).replace(/\r\n/g, "\n").trim()
+  });
+
+  const hash = await createSha256Hash(normalizedDocument);
+
+  return {
+    document_hash: hash,
+    original_hash: hash,
+    current_hash: hash,
+    hash_algorithm: "SHA-256",
+    hash_status: "MATCH",
+    document_changed: false,
+    fingerprint_created_at: new Date().toISOString()
+  };
+}
+
+function shortHash(hash) {
+  if (!hash) return "N/A";
+  return hash.substring(0, 16) + "...";
 }
 
 function getOverallEmailStatus(senderEmailVerification, recipientEmailVerification) {
@@ -339,6 +389,10 @@ function getOverallEmailStatus(senderEmailVerification, recipientEmailVerificati
 
   return "INVALID_FORMAT";
 }
+
+// =====================================================
+// INTERNAL PROOF CREATION
+// =====================================================
 
 async function createProof() {
   const resultBox = document.getElementById("result");
@@ -363,6 +417,12 @@ async function createProof() {
     const documentTitle = cleanValue(document.getElementById("documentTitle").value, "Untitled Document");
     const documentContent = cleanValue(document.getElementById("documentContent").value);
 
+    if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
+      throw new Error("Please fill in sender name, sender email, recipient name, recipient email, and document content.");
+    }
+
+    const fingerprint = await createDocumentFingerprint(documentTitle, documentContent);
+
     const senderEmailVerification = verifyEmailLight(senderEmail);
     const recipientEmailVerification = verifyEmailLight(recipientEmail);
     const senderPhoneVerification = verifyPhoneLight(senderPhone);
@@ -378,10 +438,6 @@ async function createProof() {
 
     const shiftguard = runShiftGuardExecutionLayer(source, halo);
 
-    if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
-      throw new Error("Please fill in sender name, sender email, recipient name, recipient email, and document content.");
-    }
-
     const { error: documentError } = await supabaseClient
       .from("documents")
       .insert([{
@@ -390,30 +446,41 @@ async function createProof() {
         document_title: documentTitle,
         document_type: "proof_document",
         document_content: documentContent,
+
+        document_hash: fingerprint.document_hash,
+        original_hash: fingerprint.original_hash,
+        current_hash: fingerprint.current_hash,
+        hash_algorithm: fingerprint.hash_algorithm,
+        hash_status: fingerprint.hash_status,
+        document_changed: fingerprint.document_changed,
+        fingerprint_created_at: fingerprint.fingerprint_created_at,
+
         sender_name: senderName,
         sender_email: senderEmail,
         sender_phone: senderPhone,
         sender_business: businessName,
         recipient_name: recipientName,
         recipient_email: recipientEmail,
+
         email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
+
         verification_intent: verificationIntent,
         business_name: businessName,
-        halo_status: halo.status,
-halo_risk_level: halo.risk_level,
-halo_confidence_score: halo.confidence_score,
-halo_governance_note: halo.governance_note,
 
-shiftguard_status: shiftguard.status,
-shiftguard_mode: shiftguard.mode,
-shiftguard_execution_note: shiftguard.execution_note,
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note,
+
+        shiftguard_status: shiftguard.status,
+        shiftguard_mode: shiftguard.mode,
+        shiftguard_execution_note: shiftguard.execution_note,
+
         status: "CREATED"
-       
       }]);
-    
 
     if (documentError) throw documentError;
 
@@ -429,18 +496,25 @@ shiftguard_execution_note: shiftguard.execution_note,
         verification_note: "Proof portal record created",
         verification_intent: verificationIntent,
         business_name: businessName,
+
+        document_hash: fingerprint.document_hash,
+        hash_algorithm: fingerprint.hash_algorithm,
+        hash_status: fingerprint.hash_status,
+        document_changed: fingerprint.document_changed,
+
         email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
-        halo_status: halo.status,
-halo_risk_level: halo.risk_level,
-halo_confidence_score: halo.confidence_score,
-halo_governance_note: halo.governance_note,
 
-shiftguard_status: shiftguard.status,
-shiftguard_mode: shiftguard.mode,
-shiftguard_execution_note: shiftguard.execution_note,
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note,
+
+        shiftguard_status: shiftguard.status,
+        shiftguard_mode: shiftguard.mode,
+        shiftguard_execution_note: shiftguard.execution_note
       }]);
 
     if (proofError) throw proofError;
@@ -452,6 +526,15 @@ shiftguard_execution_note: shiftguard.execution_note,
           proof_id: proofId,
           event_type: "DOCUMENT_CREATED",
           event_note: "Intent: " + verificationIntent + " | Business: " + businessName
+        },
+        {
+          proof_id: proofId,
+          event_type: "DOCUMENT_FINGERPRINT_CREATED",
+          event_note:
+            "Document fingerprint created using " + fingerprint.hash_algorithm +
+            " | Hash Status: " + fingerprint.hash_status +
+            " | Document Changed: " + fingerprint.document_changed +
+            " | Hash Preview: " + shortHash(fingerprint.document_hash)
         },
         {
           proof_id: proofId,
@@ -469,12 +552,19 @@ shiftguard_execution_note: shiftguard.execution_note,
         {
           proof_id: proofId,
           event_type: "HALO_GOVERNANCE_CHECK",
-          event_note: "HALO Status: " + halo.status + " | Risk: " + halo.risk_level + " | Confidence: " + halo.confidence_score + "% | Note: " + halo.governance_note
+          event_note:
+            "HALO Status: " + halo.status +
+            " | Risk: " + halo.risk_level +
+            " | Confidence: " + halo.confidence_score +
+            "% | Note: " + halo.governance_note
         },
         {
           proof_id: proofId,
           event_type: "SHIFTGUARD_EXECUTION_READY",
-          event_note: "SHIFTGuard Status: " + shiftguard.status + " | Mode: " + shiftguard.mode + " | Note: " + shiftguard.execution_note
+          event_note:
+            "ShiftGuard Clinical Status: " + shiftguard.status +
+            " | Mode: " + shiftguard.mode +
+            " | Note: " + shiftguard.execution_note
         },
         {
           proof_id: proofId,
@@ -503,14 +593,17 @@ shiftguard_execution_note: shiftguard.execution_note,
         recipient_name: recipientName,
         recipient_email: recipientEmail,
         recipient_phone: "",
+
         email_verification_status: recipientEmailVerification.status,
         email_verified_at: recipientEmailVerification.verified_at,
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
+
         halo_status: halo.status,
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
         halo_governance_note: halo.governance_note,
+
         delivery_status: "PENDING"
       }]);
 
@@ -540,25 +633,34 @@ shiftguard_execution_note: shiftguard.execution_note,
       "Overall Email Verification: " + getBadge(overallEmailStatus) + "<br>" +
       "Phone Verification: " + getBadge(senderPhoneVerification.status) + "<br>" +
       "Business Verification: " + businessName + " <span class='badge badge-green'>✔ CAPTURED</span><br>" +
+      "Document Fingerprint: <span class='badge badge-green'>✔ SHA-256 CREATED</span><br>" +
+      "Hash Status: " + fingerprint.hash_status + "<br>" +
+      "Document Changed: " + fingerprint.document_changed + "<br>" +
+      "Hash Preview: " + shortHash(fingerprint.document_hash) + "<br>" +
       "HALO Status: " + getHaloBadge(halo) + "<br>" +
       "HALO Risk Level: " + halo.risk_level + "<br>" +
       "HALO Confidence Score: " + halo.confidence_score + "/100<br>" +
       "HALO Governance Note: " + halo.governance_note + "<br>" +
-      "SHIFTGuard Execution Layer: " + getShiftGuardBadge(shiftguard) + "<br>" +
-      "SHIFTGuard Mode: " + shiftguard.mode + "<br>" +
-      "SHIFTGuard Note: " + shiftguard.execution_note + "<br>" +
+      "ShiftGuard Clinical Execution Layer: " + getShiftGuardBadge(shiftguard) + "<br>" +
+      "ShiftGuard Mode: " + shiftguard.mode + "<br>" +
+      "ShiftGuard Note: " + shiftguard.execution_note + "<br>" +
       "Sender: " + senderName + "<br>" +
       "Recipient: " + recipientName + "<br>" +
       "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
-      "Events logged: Created, Email Verified, Phone Verified, Business Captured, HALO Governed, SHIFTGuard Ready, Approved, Sent, Receipt Generated<br><br>" +
+      "Events logged: Created, Fingerprint Created, Email Verified, Phone Verified, Business Captured, HALO Governed, ShiftGuard Ready, Approved, Sent, Receipt Generated<br><br>" +
       "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
 
   } catch (error) {
     console.error("VRI Proof Portal Error:", error);
     resultBox.className = "result error";
+    resultBox.style.display = "block";
     resultBox.innerHTML = "Error: " + error.message;
   }
 }
+
+// =====================================================
+// EXTERNAL COMPANY PLUG-IN PROOF CREATION
+// =====================================================
 
 async function createProofExternal(payload) {
   try {
@@ -578,6 +680,8 @@ async function createProofExternal(payload) {
     const documentContent = cleanValue(payload.document_content, "This verified proof was created through a connected external company system.");
     const verificationIntent = cleanValue(payload.verification_intent, "External Verification");
     const industry = cleanValue(payload.industry, "enterprise");
+
+    const fingerprint = await createDocumentFingerprint(documentTitle, documentContent);
 
     const senderEmailVerification = verifyEmailLight(senderEmail);
     const recipientEmailVerification = verifyEmailLight(recipientEmail);
@@ -602,26 +706,39 @@ async function createProofExternal(payload) {
         document_title: documentTitle,
         document_type: "external_proof_document",
         document_content: documentContent,
+
+        document_hash: fingerprint.document_hash,
+        original_hash: fingerprint.original_hash,
+        current_hash: fingerprint.current_hash,
+        hash_algorithm: fingerprint.hash_algorithm,
+        hash_status: fingerprint.hash_status,
+        document_changed: fingerprint.document_changed,
+        fingerprint_created_at: fingerprint.fingerprint_created_at,
+
         sender_name: senderName,
         sender_email: senderEmail,
         sender_phone: senderPhone,
         sender_business: businessName,
         recipient_name: recipientName,
         recipient_email: recipientEmail,
+
         email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
+
         verification_intent: verificationIntent,
         business_name: businessName,
-       halo_status: halo.status,
-halo_risk_level: halo.risk_level,
-halo_confidence_score: halo.confidence_score,
-halo_governance_note: halo.governance_note,
 
-shiftguard_status: shiftguard.status,
-shiftguard_mode: shiftguard.mode,
-shiftguard_execution_note: shiftguard.execution_note,
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note,
+
+        shiftguard_status: shiftguard.status,
+        shiftguard_mode: shiftguard.mode,
+        shiftguard_execution_note: shiftguard.execution_note,
+
         status: "CREATED"
       }]);
 
@@ -639,18 +756,25 @@ shiftguard_execution_note: shiftguard.execution_note,
         verification_note: "Proof record created via external system connection",
         verification_intent: verificationIntent,
         business_name: businessName,
+
+        document_hash: fingerprint.document_hash,
+        hash_algorithm: fingerprint.hash_algorithm,
+        hash_status: fingerprint.hash_status,
+        document_changed: fingerprint.document_changed,
+
         email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
-       halo_status: halo.status,
-halo_risk_level: halo.risk_level,
-halo_confidence_score: halo.confidence_score,
-halo_governance_note: halo.governance_note,
 
-shiftguard_status: shiftguard.status,
-shiftguard_mode: shiftguard.mode,
-shiftguard_execution_note: shiftguard.execution_note,
+        halo_status: halo.status,
+        halo_risk_level: halo.risk_level,
+        halo_confidence_score: halo.confidence_score,
+        halo_governance_note: halo.governance_note,
+
+        shiftguard_status: shiftguard.status,
+        shiftguard_mode: shiftguard.mode,
+        shiftguard_execution_note: shiftguard.execution_note
       }]);
 
     if (proofError) throw proofError;
@@ -662,6 +786,15 @@ shiftguard_execution_note: shiftguard.execution_note,
           proof_id: proofId,
           event_type: "EXTERNAL_PROOF_CREATED",
           event_note: "External system created proof record"
+        },
+        {
+          proof_id: proofId,
+          event_type: "DOCUMENT_FINGERPRINT_CREATED",
+          event_note:
+            "External document fingerprint created using " + fingerprint.hash_algorithm +
+            " | Hash Status: " + fingerprint.hash_status +
+            " | Document Changed: " + fingerprint.document_changed +
+            " | Hash Preview: " + shortHash(fingerprint.document_hash)
         },
         {
           proof_id: proofId,
@@ -684,12 +817,19 @@ shiftguard_execution_note: shiftguard.execution_note,
         {
           proof_id: proofId,
           event_type: "HALO_GOVERNANCE_CHECK",
-          event_note: "HALO Status: " + halo.status + " | Risk: " + halo.risk_level + " | Confidence: " + halo.confidence_score + "% | Note: " + halo.governance_note
+          event_note:
+            "HALO Status: " + halo.status +
+            " | Risk: " + halo.risk_level +
+            " | Confidence: " + halo.confidence_score +
+            "% | Note: " + halo.governance_note
         },
         {
           proof_id: proofId,
           event_type: "SHIFTGUARD_EXECUTION_READY",
-          event_note: "SHIFTGuard Status: " + shiftguard.status + " | Mode: " + shiftguard.mode + " | Note: " + shiftguard.execution_note
+          event_note:
+            "ShiftGuard Clinical Status: " + shiftguard.status +
+            " | Mode: " + shiftguard.mode +
+            " | Note: " + shiftguard.execution_note
         },
         {
           proof_id: proofId,
@@ -708,14 +848,17 @@ shiftguard_execution_note: shiftguard.execution_note,
         recipient_name: recipientName,
         recipient_email: recipientEmail,
         recipient_phone: recipientPhone,
+
         email_verification_status: recipientEmailVerification.status,
         email_verified_at: recipientEmailVerification.verified_at,
         phone_verification_status: senderPhoneVerification.status,
         phone_verified_at: senderPhoneVerification.verified_at,
+
         halo_status: halo.status,
         halo_risk_level: halo.risk_level,
         halo_confidence_score: halo.confidence_score,
         halo_governance_note: halo.governance_note,
+
         delivery_status: "PENDING"
       }]);
 
@@ -739,15 +882,23 @@ shiftguard_execution_note: shiftguard.execution_note,
       status: "VERIFIED",
       business_name: businessName,
       verification_intent: verificationIntent,
+
       sender_email_verification_status: senderEmailVerification.status,
       recipient_email_verification_status: recipientEmailVerification.status,
       email_verification_status: overallEmailStatus,
       phone_verification_status: senderPhoneVerification.status,
+
+      document_hash: fingerprint.document_hash,
+      hash_algorithm: fingerprint.hash_algorithm,
+      hash_status: fingerprint.hash_status,
+      document_changed: fingerprint.document_changed,
+
       halo_status: halo.status,
       halo_risk_level: halo.risk_level,
       halo_confidence_score: halo.confidence_score,
       halo_governance_note: halo.governance_note,
       halo_badge: getHaloBadge(halo),
+
       shiftguard_status: shiftguard.status,
       shiftguard_mode: shiftguard.mode,
       shiftguard_note: shiftguard.execution_note,
@@ -756,6 +907,7 @@ shiftguard_execution_note: shiftguard.execution_note,
 
   } catch (error) {
     console.error("VRI External Plug-In Error:", error);
+
     return {
       success: false,
       error: error.message
@@ -811,27 +963,35 @@ async function testExternalPlugin() {
       "Overall Email Verification: " + getBadge(result.email_verification_status) + "<br>" +
       "Phone Verification: " + getBadge(result.phone_verification_status) + "<br>" +
       "Business Verification: " + result.business_name + " <span class='badge badge-green'>✔ CAPTURED</span><br>" +
+      "Document Fingerprint: <span class='badge badge-green'>✔ SHA-256 CREATED</span><br>" +
+      "Hash Status: " + result.hash_status + "<br>" +
+      "Document Changed: " + result.document_changed + "<br>" +
+      "Hash Preview: " + shortHash(result.document_hash) + "<br>" +
       "HALO Status: " + result.halo_badge + "<br>" +
       "HALO Risk Level: " + result.halo_risk_level + "<br>" +
       "HALO Confidence Score: " + result.halo_confidence_score + "/100<br>" +
       "HALO Governance Note: " + result.halo_governance_note + "<br>" +
-      "SHIFTGuard Execution Layer: " + result.shiftguard_badge + "<br>" +
-      "SHIFTGuard Mode: " + result.shiftguard_mode + "<br>" +
-      "SHIFTGuard Note: " + result.shiftguard_note + "<br><br>" +
-      "Events logged: External Created, Email Checked, Phone Checked, Business Captured, Company Verified, HALO Governed, SHIFTGuard Ready, Receipt Generated<br><br>" +
+      "ShiftGuard Clinical Execution Layer: " + result.shiftguard_badge + "<br>" +
+      "ShiftGuard Mode: " + result.shiftguard_mode + "<br>" +
+      "ShiftGuard Note: " + result.shiftguard_note + "<br><br>" +
+      "Events logged: External Created, Fingerprint Created, Email Checked, Phone Checked, Business Captured, Company Verified, HALO Governed, ShiftGuard Ready, Receipt Generated<br><br>" +
       "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
+
   } else {
     resultBox.className = "result error";
     resultBox.innerHTML = "Company plug-in test failed: " + result.error;
   }
 }
 
+// =====================================================
+// SHIFTGUARD CLINICAL EXECUTION DEMO
+// =====================================================
 
- async function simulateHospitalExecution() {
+async function simulateHospitalExecution() {
   const resultBox = document.getElementById("result");
 
   if (!lastProofId) {
-    alert("Create a proof first before running a hospital execution demo.");
+    alert("Create a proof first before running a ShiftGuard Clinical execution demo.");
     return;
   }
 
@@ -908,45 +1068,102 @@ async function testExternalPlugin() {
 
     resultBox.innerHTML +=
       "<br><br>" +
-      "<strong>⚙ SHIFTGuard™ HOSPITAL EXECUTION DEMO</strong><br><br>" +
+      "<strong>⚙ ShiftGuard Clinical™ EXECUTION DEMO</strong><br><br>" +
       "Execution ID: " + executionId + "<br>" +
       "Linked Proof ID: " + lastProofId + "<br>" +
       "Execution Actor: " + scenario.actor + "<br>" +
       "Execution Action: " + scenario.action + "<br>" +
-      "SHIFTGuard Decision: <span class='badge " + badgeClass + "'>" + scenario.decision + "</span><br>" +
+      "ShiftGuard Decision: <span class='badge " + badgeClass + "'>" + scenario.decision + "</span><br>" +
       "HALO Risk Level: <span class='badge " + badgeClass + "'>" + scenario.halo_risk + "</span><br>" +
       "HALO Risk Started At: " + scenario.risk_origin + "<br>" +
-      "Required Action Before Nurse Moves Forward: " + scenario.required_action + "<br>" +
-      (scenario.decision === "BLOCKED" || scenario.decision === "ESCALATED"
-  ? "<div style='margin-top:20px;padding:18px;border:2px solid #ff4d4d;background:rgba(120,0,0,0.35);border-radius:12px;text-align:center;font-weight:bold;font-size:22px;color:#ff8080;box-shadow:0 0 18px rgba(255,0,0,0.35);'>" +
-
-    "⚠ OVERRIDE REQUIRED<br>" +
-    "Supervisor Authorization Needed<br><br>" +
-
-    "<button onclick=\"requestSupervisorOverride('" + executionId + "','" + scenario.decision + "')\">" +
-    "REQUEST SUPERVISOR OVERRIDE" +
-    "</button><br><br>" +
-
-    "<button onclick=\"supervisorOverrideDecision('" + executionId + "','APPROVED')\">" +
-    "APPROVE OVERRIDE" +
-    "</button><br><br>" +
-
-    "<button onclick=\"supervisorOverrideDecision('" + executionId + "','DENIED')\">" +
-    "DENY OVERRIDE" +
-    "</button>" +
-
-  "</div><br>"
-  : "") +
+      "Required Action Before Execution Continues: " + scenario.required_action + "<br>" +
+      (
+        scenario.decision === "BLOCKED" || scenario.decision === "ESCALATED"
+          ? "<div style='margin-top:20px;padding:18px;border:2px solid #ff4d4d;background:rgba(120,0,0,0.35);border-radius:12px;text-align:center;font-weight:bold;font-size:22px;color:#ff8080;box-shadow:0 0 18px rgba(255,0,0,0.35);'>" +
+            "⚠ OVERRIDE REQUIRED<br>" +
+            "Supervisor Authorization Needed<br><br>" +
+            "<button onclick=\"requestSupervisorOverride('" + executionId + "','" + scenario.decision + "','" + scenario.action + "','" + scenario.actor + "','" + scenario.halo_risk + "')\">" +
+            "REQUEST SUPERVISOR OVERRIDE" +
+            "</button><br><br>" +
+            "<button onclick=\"supervisorOverrideDecision('" + executionId + "','APPROVED')\">" +
+            "APPROVE OVERRIDE" +
+            "</button><br><br>" +
+            "<button onclick=\"supervisorOverrideDecision('" + executionId + "','DENIED')\">" +
+            "DENY OVERRIDE" +
+            "</button>" +
+            "</div><br>"
+          : ""
+      ) +
       "Execution Trace: LOCKED<br>" +
       "Audit Event: SHIFTGUARD_HOSPITAL_EXECUTION<br>";
 
   } catch (error) {
     resultBox.className = "result error";
     resultBox.style.display = "block";
-    resultBox.innerHTML = "SHIFTGuard hospital execution failed: " + error.message;
+    resultBox.innerHTML = "ShiftGuard Clinical execution failed: " + error.message;
   }
 }
- function supervisorOverrideDecision(executionId, decision) {
+
+async function requestSupervisorOverride(executionId, decision, action, actor, riskLevel) {
+  const resultBox = document.getElementById("result");
+
+  if (!lastProofId) {
+    alert("No Proof ID found. Create a proof first.");
+    return;
+  }
+
+  try {
+    const eventNote =
+      "Supervisor override requested" +
+      " | Execution ID: " + executionId +
+      " | Prior Decision: " + decision +
+      " | Action: " + action +
+      " | Actor: " + actor +
+      " | Risk Level: " + riskLevel +
+      " | Request Timestamp: " + new Date().toISOString();
+
+    const { error: eventError } = await supabaseClient
+      .from("verification_events")
+      .insert([{
+        proof_id: lastProofId,
+        event_type: "SUPERVISOR_OVERRIDE_REQUESTED",
+        event_note: eventNote
+      }]);
+
+    if (eventError) throw eventError;
+
+    try {
+      await supabaseClient
+        .from("execution_escalations")
+        .insert([{
+          proof_id: lastProofId,
+          execution_id: executionId,
+          actor_name: actor,
+          department: "ShiftGuard Clinical Demo",
+          action: action,
+          risk_level: riskLevel,
+          escalation_status: "OPEN",
+          supervisor_required: true
+        }]);
+    } catch (escalationError) {
+      console.warn("Escalation feed insert skipped:", escalationError);
+    }
+
+    resultBox.innerHTML +=
+      "<br><div style='margin-top:18px;padding:18px;border:2px solid #ffcc00;background:rgba(90,70,0,0.35);border-radius:12px;text-align:center;font-weight:bold;color:#ffcc00;'>" +
+      "⚠ SUPERVISOR OVERRIDE REQUEST LOGGED<br>" +
+      "Execution ID: " + executionId + "<br>" +
+      "Proof ID: " + lastProofId + "<br>" +
+      "Status: PENDING HUMAN AUTHORITY" +
+      "</div><br>";
+
+  } catch (error) {
+    resultBox.className = "result error";
+    resultBox.innerHTML = "Supervisor override request failed: " + error.message;
+  }
+}
+
+function supervisorOverrideDecision(executionId, decision) {
   const resultBox = document.getElementById("result");
 
   const decisionLabel = decision === "APPROVED"
@@ -955,7 +1172,7 @@ async function testExternalPlugin() {
 
   resultBox.innerHTML +=
     "<br><div style='margin-top:20px;padding:18px;border:2px solid #1e8fff;background:rgba(0,40,90,0.45);border-radius:12px;'>" +
-    "<strong>SHIFTGuard Clinical™ Supervisor Authorization</strong><br><br>" +
+    "<strong>ShiftGuard Clinical™ Supervisor Authorization</strong><br><br>" +
     "Decision Type: <strong>" + decision + "</strong><br>" +
     "Linked Execution ID: " + executionId + "<br><br>" +
 
@@ -1031,6 +1248,7 @@ async function submitSupervisorAuthorization(executionId, decision, decisionLabe
     resultBox.innerHTML = "Supervisor authorization failed: " + error.message;
   }
 }
+
 function goToReceipt() {
   if (!lastProofId) {
     alert("No proof created yet.");
