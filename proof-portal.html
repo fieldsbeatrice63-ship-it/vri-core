@@ -201,9 +201,10 @@ button:hover {
 
   <button onclick="testExternalPlugin()">TEST COMPANY PLUG-IN</button>
 
-  <button onclick="simulateHospitalExecution()">
-    SIMULATE HOSPITAL EXECUTION
+ <button onclick="simulateHospitalExecution()">
+    SIMULATE PROTECTED EXECUTION
   </button>
+  
 
   <div id="result" class="result"></div>
 </div>
@@ -1139,49 +1140,63 @@ async function simulateHospitalExecution() {
   const resultBox = document.getElementById("result");
 
   if (!lastProofId) {
-    alert("Create a proof first before running a hospital execution demo.");
+    alert("Create a proof first before running a ShiftGuard Clinical protected execution demo.");
     return;
   }
 
   const scenarios = [
     {
-      action: "Medication Administration",
-      actor: "Nurse ID SG-NURSE-104",
-      risk_origin: "Patient identity confirmed and medication matched active order.",
-      decision: "APPROVED",
-      required_action: "Proceed with administration and document completion.",
-      halo_risk: "LOW"
-    },
-    {
-      action: "Controlled Substance Access",
-      actor: "Nurse ID SG-NURSE-221",
-      risk_origin: "Controlled medication requested without second verification.",
+      sector: "Healthcare",
+      action: "High-Risk Medication Administration",
+      actor: "Clinical User SG-CLIN-104",
+      risk_origin: "Medication action requires secondary verification before execution.",
       decision: "BLOCKED",
-      required_action: "Supervisor witness verification required before access.",
+      required_action: "Supervisor witness verification required before execution continues.",
       halo_risk: "HIGH"
     },
     {
-      action: "Patient Transfer Approval",
-      actor: "Nurse ID SG-NURSE-087",
-      risk_origin: "Transfer requested before discharge checklist was completed.",
+      sector: "Finance",
+      action: "High-Risk Wire Transfer Approval",
+      actor: "Finance Officer SG-FIN-221",
+      risk_origin: "Transfer amount exceeded normal approval threshold.",
       decision: "ESCALATED",
-      required_action: "Complete checklist and obtain charge nurse approval.",
+      required_action: "Fraud risk supervisor must approve before funds move.",
+      halo_risk: "HIGH"
+    },
+    {
+      sector: "Legal",
+      action: "Binding Document Authorization",
+      actor: "Legal Reviewer SG-LEGAL-087",
+      risk_origin: "Final authorization requested before full review chain was completed.",
+      decision: "ESCALATED",
+      required_action: "Senior legal authority must confirm authorization.",
       halo_risk: "MEDIUM"
     },
     {
-      action: "Medication Dose Change",
-      actor: "Nurse ID SG-NURSE-332",
-      risk_origin: "Dose entered does not match provider order.",
+      sector: "HR",
+      action: "Employee Termination Authorization",
+      actor: "HR Director SG-HR-332",
+      risk_origin: "Termination action requires documented authority and review.",
       decision: "BLOCKED",
-      required_action: "Verify provider order before proceeding.",
+      required_action: "Executive or HR compliance approval required before final action.",
       halo_risk: "HIGH"
     },
     {
-      action: "Shift Handoff Verification",
-      actor: "Nurse ID SG-NURSE-118",
-      risk_origin: "Handoff completed with patient status, medication schedule, and pending labs confirmed.",
+      sector: "AI Governance",
+      action: "Autonomous AI Model Execution",
+      actor: "HALO Governance Engine SG-AI-118",
+      risk_origin: "AI-generated action requires human review before execution.",
+      decision: "ESCALATED",
+      required_action: "Human authority must review and approve AI-assisted execution.",
+      halo_risk: "HIGH"
+    },
+    {
+      sector: "General Enterprise",
+      action: "Internal Audit Submission",
+      actor: "Operations User SG-OPS-440",
+      risk_origin: "Action matched policy and required fields were present.",
       decision: "APPROVED",
-      required_action: "Proceed with next shift acceptance.",
+      required_action: "Proceed and keep audit trail locked.",
       halo_risk: "LOW"
     }
   ];
@@ -1198,9 +1213,10 @@ async function simulateHospitalExecution() {
       .from("verification_events")
       .insert([{
         proof_id: lastProofId,
-        event_type: "SHIFTGUARD_HOSPITAL_EXECUTION",
+        event_type: "SHIFTGUARD_PROTECTED_EXECUTION",
         event_note:
           "Execution ID: " + executionId +
+          " | Sector: " + scenario.sector +
           " | Action: " + scenario.action +
           " | Actor: " + scenario.actor +
           " | Decision: " + scenario.decision +
@@ -1216,15 +1232,16 @@ async function simulateHospitalExecution() {
 
     resultBox.innerHTML +=
       "<br><br>" +
-      "<strong>⚙ ShiftGuard Clinical™ HOSPITAL EXECUTION DEMO</strong><br><br>" +
+      "<strong>⚙ ShiftGuard Clinical™ PROTECTED EXECUTION DEMO</strong><br><br>" +
       "Execution ID: " + executionId + "<br>" +
       "Linked Proof ID: " + lastProofId + "<br>" +
+      "Sector: " + scenario.sector + "<br>" +
       "Execution Actor: " + scenario.actor + "<br>" +
       "Execution Action: " + scenario.action + "<br>" +
       "ShiftGuard Decision: <span class='badge " + badgeClass + "'>" + scenario.decision + "</span><br>" +
       "HALO Risk Level: <span class='badge " + badgeClass + "'>" + scenario.halo_risk + "</span><br>" +
       "HALO Risk Started At: " + scenario.risk_origin + "<br>" +
-      "Required Action Before Nurse Moves Forward: " + scenario.required_action + "<br>" +
+      "Required Action Before Execution Continues: " + scenario.required_action + "<br>" +
       (
         scenario.decision === "BLOCKED" || scenario.decision === "ESCALATED"
           ? "<div style='margin-top:20px;padding:18px;border:2px solid #ff4d4d;background:rgba(120,0,0,0.35);border-radius:12px;text-align:center;font-weight:bold;font-size:22px;color:#ff8080;box-shadow:0 0 18px rgba(255,0,0,0.35);'>" +
@@ -1243,15 +1260,14 @@ async function simulateHospitalExecution() {
           : ""
       ) +
       "Execution Trace: LOCKED<br>" +
-      "Audit Event: SHIFTGUARD_HOSPITAL_EXECUTION<br>";
+      "Audit Event: SHIFTGUARD_PROTECTED_EXECUTION<br>";
 
   } catch (error) {
     resultBox.className = "result error";
     resultBox.style.display = "block";
-    resultBox.innerHTML = "ShiftGuard hospital execution failed: " + error.message;
+    resultBox.innerHTML = "ShiftGuard protected execution failed: " + error.message;
   }
 }
-
 async function requestSupervisorOverride(executionId, decision, action, actor, riskLevel) {
   const resultBox = document.getElementById("result");
 
