@@ -250,7 +250,10 @@ async function loadIncidentFile() {
   }
 
   const allEvents = events || [];
-  const executionEvent = allEvents.find(e => e.event_type === "SHIFTGUARD_HOSPITAL_EXECUTION");
+  const executionEvent = allEvents.find(e =>
+  e.event_type === "SHIFTGUARD_PROTECTED_EXECUTION" ||
+  e.event_type === "SHIFTGUARD_HOSPITAL_EXECUTION"
+);
   const overrideRequest = allEvents.find(e => e.event_type === "SUPERVISOR_OVERRIDE_REQUESTED");
   const authorityEvent = allEvents.find(e =>
     e.event_type.includes("SHIFTGUARD_SUPERVISOR_AUTHORIZATION") ||
