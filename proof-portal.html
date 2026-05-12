@@ -101,7 +101,8 @@ button:hover {
   background: rgba(80, 0, 0, 0.45);
   color: #ff6b6b;
 }
-  .badge {
+
+.badge {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 999px;
@@ -178,20 +179,34 @@ button:hover {
   <label>Document Content</label>
   <textarea id="documentContent" placeholder="Enter or paste document content"></textarea>
 
+  <label>Was AI used to help create this document?</label>
+  <select id="aiUsed">
+    <option value="false">No</option>
+    <option value="true">Yes</option>
+  </select>
+
+  <label>AI Tool Name</label>
+  <input id="aiToolName" placeholder="Example: ChatGPT, Claude, Gemini, none">
+
+  <label>Was this document reviewed by a human?</label>
+  <select id="humanReviewed">
+    <option value="true">Yes</option>
+    <option value="false">No</option>
+  </select>
+
+  <label>AI Disclosure Note</label>
+  <textarea id="aiDisclosureNote" placeholder="Explain whether AI helped draft, edit, summarize, rewrite, or review this document."></textarea>
+
   <button onclick="createProof()">CREATE PROOF RECORD</button>
 
-<button onclick="testExternalPlugin()">TEST COMPANY PLUG-IN</button>
+  <button onclick="testExternalPlugin()">TEST COMPANY PLUG-IN</button>
 
   <button onclick="simulateHospitalExecution()">
-SIMULATE HOSPITAL EXECUTION
-</button>
+    SIMULATE HOSPITAL EXECUTION
+  </button>
 
-<div id="result" class="result"></div>
+  <div id="result" class="result"></div>
 </div>
-
-
-
-
 
 <script>
 const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
@@ -293,8 +308,8 @@ function runHaloGovernance(emailStatus, phoneStatus, businessName, verificationI
   if (score < 50) riskLevel = "HIGH";
 
   const governanceNote = issues.length === 0
-    ? "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, document fingerprint, and receipt readiness. No major governance concerns were detected."
-    : "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, document fingerprint, and receipt readiness. Review needed because: " + issues.join(", ") + ".";
+    ? "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, document fingerprint, AI disclosure, and receipt readiness. No major governance concerns were detected."
+    : "HALO reviewed the proof source, verification intent, business capture, email signal, phone signal, document fingerprint, AI disclosure, and receipt readiness. Review needed because: " + issues.join(", ") + ".";
 
   return {
     status: "GOVERNED",
@@ -331,7 +346,6 @@ function getShiftGuardBadge(shiftguard) {
 
 // =====================================================
 // VRI DOCUMENT FINGERPRINT / HASH LOGIC
-// Creates a SHA-256 fingerprint for proof integrity
 // =====================================================
 
 async function createSha256Hash(value) {
@@ -370,6 +384,58 @@ async function createDocumentFingerprint(documentTitle, documentContent) {
 function shortHash(hash) {
   if (!hash) return "N/A";
   return hash.substring(0, 16) + "...";
+}
+
+// =====================================================
+// VRI AI CONTENT DISCLOSURE LOGIC
+// =====================================================
+
+function createAiDisclosure(aiUsedValue, aiToolNameValue, humanReviewedValue, aiDisclosureNoteValue) {
+  const aiUsed = String(aiUsedValue) === "true";
+  const humanReviewed = String(humanReviewedValue) !== "false";
+
+  const aiToolName = cleanValue(
+    aiToolNameValue,
+    aiUsed ? "AI tool not specified" : "None"
+  );
+
+  const aiDisclosureNote = cleanValue(
+    aiDisclosureNoteValue,
+    aiUsed
+      ? "AI assistance was disclosed, but no detailed note was provided."
+      : "No AI assistance disclosed."
+  );
+
+  let aiContentStatus = "NOT_USED";
+
+  if (aiUsed && humanReviewed) {
+    aiContentStatus = "AI_ASSISTED_HUMAN_REVIEWED";
+  }
+
+  if (aiUsed && !humanReviewed) {
+    aiContentStatus = "AI_ASSISTED_NOT_HUMAN_REVIEWED";
+  }
+
+  return {
+    ai_used: aiUsed,
+    ai_tool_name: aiToolName,
+    ai_disclosure_note: aiDisclosureNote,
+    human_reviewed: humanReviewed,
+    ai_content_status: aiContentStatus,
+    ai_disclosed_at: new Date().toISOString()
+  };
+}
+
+function getAiBadge(aiDisclosure) {
+  if (!aiDisclosure || !aiDisclosure.ai_used) {
+    return "<span class='badge badge-green'>AI NOT USED</span>";
+  }
+
+  if (aiDisclosure.human_reviewed) {
+    return "<span class='badge badge-yellow'>AI USED · HUMAN REVIEWED</span>";
+  }
+
+  return "<span class='badge badge-red'>AI USED · NOT HUMAN REVIEWED</span>";
 }
 
 function getOverallEmailStatus(senderEmailVerification, recipientEmailVerification) {
@@ -417,6 +483,13 @@ async function createProof() {
     const documentTitle = cleanValue(document.getElementById("documentTitle").value, "Untitled Document");
     const documentContent = cleanValue(document.getElementById("documentContent").value);
 
+    const aiDisclosure = createAiDisclosure(
+      document.getElementById("aiUsed").value,
+      document.getElementById("aiToolName").value,
+      document.getElementById("humanReviewed").value,
+      document.getElementById("aiDisclosureNote").value
+    );
+
     if (!senderName || !senderEmail || !recipientName || !recipientEmail || !documentContent) {
       throw new Error("Please fill in sender name, sender email, recipient name, recipient email, and document content.");
     }
@@ -454,6 +527,13 @@ async function createProof() {
         hash_status: fingerprint.hash_status,
         document_changed: fingerprint.document_changed,
         fingerprint_created_at: fingerprint.fingerprint_created_at,
+
+        ai_used: aiDisclosure.ai_used,
+        ai_tool_name: aiDisclosure.ai_tool_name,
+        ai_disclosure_note: aiDisclosure.ai_disclosure_note,
+        human_reviewed: aiDisclosure.human_reviewed,
+        ai_content_status: aiDisclosure.ai_content_status,
+        ai_disclosed_at: aiDisclosure.ai_disclosed_at,
 
         sender_name: senderName,
         sender_email: senderEmail,
@@ -502,6 +582,13 @@ async function createProof() {
         hash_status: fingerprint.hash_status,
         document_changed: fingerprint.document_changed,
 
+        ai_used: aiDisclosure.ai_used,
+        ai_tool_name: aiDisclosure.ai_tool_name,
+        ai_disclosure_note: aiDisclosure.ai_disclosure_note,
+        human_reviewed: aiDisclosure.human_reviewed,
+        ai_content_status: aiDisclosure.ai_content_status,
+        ai_disclosed_at: aiDisclosure.ai_disclosed_at,
+
         email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
         phone_verification_status: senderPhoneVerification.status,
@@ -535,6 +622,16 @@ async function createProof() {
             " | Hash Status: " + fingerprint.hash_status +
             " | Document Changed: " + fingerprint.document_changed +
             " | Hash Preview: " + shortHash(fingerprint.document_hash)
+        },
+        {
+          proof_id: proofId,
+          event_type: "AI_CONTENT_DISCLOSURE_RECORDED",
+          event_note:
+            "AI Used: " + aiDisclosure.ai_used +
+            " | AI Tool: " + aiDisclosure.ai_tool_name +
+            " | Human Reviewed: " + aiDisclosure.human_reviewed +
+            " | AI Content Status: " + aiDisclosure.ai_content_status +
+            " | Disclosure Note: " + aiDisclosure.ai_disclosure_note
         },
         {
           proof_id: proofId,
@@ -637,6 +734,11 @@ async function createProof() {
       "Hash Status: " + fingerprint.hash_status + "<br>" +
       "Document Changed: " + fingerprint.document_changed + "<br>" +
       "Hash Preview: " + shortHash(fingerprint.document_hash) + "<br>" +
+      "AI Content Disclosure: " + getAiBadge(aiDisclosure) + "<br>" +
+      "AI Tool: " + aiDisclosure.ai_tool_name + "<br>" +
+      "Human Reviewed: " + aiDisclosure.human_reviewed + "<br>" +
+      "AI Content Status: " + aiDisclosure.ai_content_status + "<br>" +
+      "AI Disclosure Note: " + aiDisclosure.ai_disclosure_note + "<br>" +
       "HALO Status: " + getHaloBadge(halo) + "<br>" +
       "HALO Risk Level: " + halo.risk_level + "<br>" +
       "HALO Confidence Score: " + halo.confidence_score + "/100<br>" +
@@ -647,7 +749,7 @@ async function createProof() {
       "Sender: " + senderName + "<br>" +
       "Recipient: " + recipientName + "<br>" +
       "Timestamp: " + new Date().toLocaleString() + "<br><br>" +
-      "Events logged: Created, Fingerprint Created, Email Verified, Phone Verified, Business Captured, HALO Governed, ShiftGuard Ready, Approved, Sent, Receipt Generated<br><br>" +
+      "Events logged: Created, Fingerprint Created, AI Disclosure Recorded, Email Verified, Phone Verified, Business Captured, HALO Governed, ShiftGuard Ready, Approved, Sent, Receipt Generated<br><br>" +
       "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
 
   } catch (error) {
@@ -680,6 +782,13 @@ async function createProofExternal(payload) {
     const documentContent = cleanValue(payload.document_content, "This verified proof was created through a connected external company system.");
     const verificationIntent = cleanValue(payload.verification_intent, "External Verification");
     const industry = cleanValue(payload.industry, "enterprise");
+
+    const aiDisclosure = createAiDisclosure(
+      payload.ai_used || false,
+      payload.ai_tool_name || "None",
+      payload.human_reviewed !== false,
+      payload.ai_disclosure_note || "No AI assistance disclosed."
+    );
 
     const fingerprint = await createDocumentFingerprint(documentTitle, documentContent);
 
@@ -714,6 +823,13 @@ async function createProofExternal(payload) {
         hash_status: fingerprint.hash_status,
         document_changed: fingerprint.document_changed,
         fingerprint_created_at: fingerprint.fingerprint_created_at,
+
+        ai_used: aiDisclosure.ai_used,
+        ai_tool_name: aiDisclosure.ai_tool_name,
+        ai_disclosure_note: aiDisclosure.ai_disclosure_note,
+        human_reviewed: aiDisclosure.human_reviewed,
+        ai_content_status: aiDisclosure.ai_content_status,
+        ai_disclosed_at: aiDisclosure.ai_disclosed_at,
 
         sender_name: senderName,
         sender_email: senderEmail,
@@ -762,6 +878,13 @@ async function createProofExternal(payload) {
         hash_status: fingerprint.hash_status,
         document_changed: fingerprint.document_changed,
 
+        ai_used: aiDisclosure.ai_used,
+        ai_tool_name: aiDisclosure.ai_tool_name,
+        ai_disclosure_note: aiDisclosure.ai_disclosure_note,
+        human_reviewed: aiDisclosure.human_reviewed,
+        ai_content_status: aiDisclosure.ai_content_status,
+        ai_disclosed_at: aiDisclosure.ai_disclosed_at,
+
         email_verification_status: overallEmailStatus,
         email_verified_at: recipientEmailVerification.verified_at,
         phone_verification_status: senderPhoneVerification.status,
@@ -795,6 +918,16 @@ async function createProofExternal(payload) {
             " | Hash Status: " + fingerprint.hash_status +
             " | Document Changed: " + fingerprint.document_changed +
             " | Hash Preview: " + shortHash(fingerprint.document_hash)
+        },
+        {
+          proof_id: proofId,
+          event_type: "AI_CONTENT_DISCLOSURE_RECORDED",
+          event_note:
+            "External AI Used: " + aiDisclosure.ai_used +
+            " | AI Tool: " + aiDisclosure.ai_tool_name +
+            " | Human Reviewed: " + aiDisclosure.human_reviewed +
+            " | AI Content Status: " + aiDisclosure.ai_content_status +
+            " | Disclosure Note: " + aiDisclosure.ai_disclosure_note
         },
         {
           proof_id: proofId,
@@ -893,6 +1026,12 @@ async function createProofExternal(payload) {
       hash_status: fingerprint.hash_status,
       document_changed: fingerprint.document_changed,
 
+      ai_used: aiDisclosure.ai_used,
+      ai_tool_name: aiDisclosure.ai_tool_name,
+      ai_disclosure_note: aiDisclosure.ai_disclosure_note,
+      human_reviewed: aiDisclosure.human_reviewed,
+      ai_content_status: aiDisclosure.ai_content_status,
+
       halo_status: halo.status,
       halo_risk_level: halo.risk_level,
       halo_confidence_score: halo.confidence_score,
@@ -944,7 +1083,11 @@ async function testExternalPlugin() {
     document_title: documentTitle,
     document_content: documentContent,
     verification_intent: verificationIntent,
-    industry: "enterprise"
+    industry: "enterprise",
+    ai_used: document.getElementById("aiUsed").value === "true",
+    ai_tool_name: document.getElementById("aiToolName").value,
+    human_reviewed: document.getElementById("humanReviewed").value !== "false",
+    ai_disclosure_note: document.getElementById("aiDisclosureNote").value
   });
 
   if (result.success) {
@@ -967,6 +1110,11 @@ async function testExternalPlugin() {
       "Hash Status: " + result.hash_status + "<br>" +
       "Document Changed: " + result.document_changed + "<br>" +
       "Hash Preview: " + shortHash(result.document_hash) + "<br>" +
+      "AI Content Disclosure: " + getAiBadge(result) + "<br>" +
+      "AI Tool: " + result.ai_tool_name + "<br>" +
+      "Human Reviewed: " + result.human_reviewed + "<br>" +
+      "AI Content Status: " + result.ai_content_status + "<br>" +
+      "AI Disclosure Note: " + result.ai_disclosure_note + "<br>" +
       "HALO Status: " + result.halo_badge + "<br>" +
       "HALO Risk Level: " + result.halo_risk_level + "<br>" +
       "HALO Confidence Score: " + result.halo_confidence_score + "/100<br>" +
@@ -974,7 +1122,7 @@ async function testExternalPlugin() {
       "ShiftGuard Clinical Execution Layer: " + result.shiftguard_badge + "<br>" +
       "ShiftGuard Mode: " + result.shiftguard_mode + "<br>" +
       "ShiftGuard Note: " + result.shiftguard_note + "<br><br>" +
-      "Events logged: External Created, Fingerprint Created, Email Checked, Phone Checked, Business Captured, Company Verified, HALO Governed, ShiftGuard Ready, Receipt Generated<br><br>" +
+      "Events logged: External Created, Fingerprint Created, AI Disclosure Recorded, Email Checked, Phone Checked, Business Captured, Company Verified, HALO Governed, ShiftGuard Ready, Receipt Generated<br><br>" +
       "<button onclick='goToReceipt()'>VIEW RECEIPT</button>";
 
   } else {
@@ -991,7 +1139,7 @@ async function simulateHospitalExecution() {
   const resultBox = document.getElementById("result");
 
   if (!lastProofId) {
-    alert("Create a proof first before running a ShiftGuard Clinical execution demo.");
+    alert("Create a proof first before running a hospital execution demo.");
     return;
   }
 
@@ -1068,7 +1216,7 @@ async function simulateHospitalExecution() {
 
     resultBox.innerHTML +=
       "<br><br>" +
-      "<strong>⚙ ShiftGuard Clinical™ EXECUTION DEMO</strong><br><br>" +
+      "<strong>⚙ ShiftGuard Clinical™ HOSPITAL EXECUTION DEMO</strong><br><br>" +
       "Execution ID: " + executionId + "<br>" +
       "Linked Proof ID: " + lastProofId + "<br>" +
       "Execution Actor: " + scenario.actor + "<br>" +
@@ -1076,7 +1224,7 @@ async function simulateHospitalExecution() {
       "ShiftGuard Decision: <span class='badge " + badgeClass + "'>" + scenario.decision + "</span><br>" +
       "HALO Risk Level: <span class='badge " + badgeClass + "'>" + scenario.halo_risk + "</span><br>" +
       "HALO Risk Started At: " + scenario.risk_origin + "<br>" +
-      "Required Action Before Execution Continues: " + scenario.required_action + "<br>" +
+      "Required Action Before Nurse Moves Forward: " + scenario.required_action + "<br>" +
       (
         scenario.decision === "BLOCKED" || scenario.decision === "ESCALATED"
           ? "<div style='margin-top:20px;padding:18px;border:2px solid #ff4d4d;background:rgba(120,0,0,0.35);border-radius:12px;text-align:center;font-weight:bold;font-size:22px;color:#ff8080;box-shadow:0 0 18px rgba(255,0,0,0.35);'>" +
@@ -1100,7 +1248,7 @@ async function simulateHospitalExecution() {
   } catch (error) {
     resultBox.className = "result error";
     resultBox.style.display = "block";
-    resultBox.innerHTML = "ShiftGuard Clinical execution failed: " + error.message;
+    resultBox.innerHTML = "ShiftGuard hospital execution failed: " + error.message;
   }
 }
 
@@ -1132,21 +1280,21 @@ async function requestSupervisorOverride(executionId, decision, action, actor, r
 
     if (eventError) throw eventError;
 
-    try {
-      await supabaseClient
-        .from("execution_escalations")
-        .insert([{
-          proof_id: lastProofId,
-          execution_id: executionId,
-          actor_name: actor,
-          department: "ShiftGuard Clinical Demo",
-          action: action,
-          risk_level: riskLevel,
-          escalation_status: "OPEN",
-          supervisor_required: true
-        }]);
-    } catch (escalationError) {
-      console.warn("Escalation feed insert skipped:", escalationError);
+    const { error: escalationError } = await supabaseClient
+      .from("execution_escalations")
+      .insert([{
+        proof_id: lastProofId,
+        execution_id: executionId,
+        actor_name: actor,
+        department: "ShiftGuard Clinical Demo",
+        action: action,
+        risk_level: riskLevel,
+        escalation_status: "OPEN",
+        supervisor_required: true
+      }]);
+
+    if (escalationError) {
+      console.warn("Escalation feed insert skipped:", escalationError.message);
     }
 
     resultBox.innerHTML +=
@@ -1261,5 +1409,3 @@ function goToReceipt() {
 
 </body>
 </html>
-
-
