@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Public Proof Verification</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #020818;
+  --panel: rgba(2, 8, 24, 0.88);
+  --border: rgba(30, 143, 255, 0.55);
+  --blue: #1e8fff;
+  --cyan: #00c8ff;
+  --green: #00ff99;
+  --yellow: #ffcc00;
+  --red: #ff6b6b;
+  --text: #e8f4ff;
+  --muted: #8fbfff;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at center, rgba(0,200,255,0.12), transparent 38%),
+    linear-gradient(135deg, #020818, #040d2a, #020c1e);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+  padding: 40px;
+}
+
+.nav {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  z-index: 999;
+  font-size: 12px;
+}
+
+.nav a {
+  color: var(--muted);
+  margin-left: 14px;
+  text-decoration: none;
+}
+
+.container {
+  max-width: 920px;
+  margin: 40px auto 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 0 24px rgba(0, 140, 255, 0.25);
+}
+
+h1 {
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.lookup-row {
+  display: flex;
+  gap: 10px;
+  margin: 24px 0;
+}
+
+input {
+  flex: 1;
+  padding: 14px;
+  background: #06142d;
+  border: 1px solid var(--blue);
+  color: white;
+  border-radius: 8px;
+  outline: none;
+}
+
+button {
+  padding: 14px 22px;
+  border: 1px solid var(--blue);
+  background: rgba(0, 80, 255, 0.25);
+  color: white;
+  border-radius: 8px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: rgba(0, 120, 255, 0.35);
+}
+
+.card {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid rgba(30, 143, 255, 0.45);
+  border-radius: 12px;
+  background: rgba(0, 20, 50, 0.55);
+  line-height: 1.7;
+}
+
+.card h2,
+.card h3 {
+  margin-bottom: 10px;
+}
+
+.green { color: var(--green); }
+.yellow { color: var(--yellow); }
+.red { color: var(--red); }
+.blue { color: var(--muted); }
+
+.badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.badge-green {
+  color: var(--green);
+  border: 1px solid var(--green);
+  background: rgba(0, 255, 153, 0.08);
+}
+
+.badge-yellow {
+  color: var(--yellow);
+  border: 1px solid var(--yellow);
+  background: rgba(255, 204, 0, 0.08);
+}
+
+.badge-red {
+  color: var(--red);
+  border: 1px solid var(--red);
+  background: rgba(255, 60, 60, 0.08);
+}
+
+.safe-note {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px dashed rgba(143, 191, 255, 0.45);
+  color: var(--muted);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.footer {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+@media(max-width: 760px) {
+  body {
+    padding: 24px;
+  }
+
+  .nav {
+    position: static;
+    margin-bottom: 20px;
+  }
+
+  .lookup-row {
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="nav">
+  <a href="/index.html">System</a>
+  <a href="/proof-portal.html">Create Proof</a>
+  <a href="/verify-proof.html">Verify Proof</a>
+  <a href="/receipt.html">Receipt</a>
+  <a href="/verification-monitor.html">Monitor</a>
+</div>
+
+<div class="container">
+  <h1>VRI™ Public Proof Verification</h1>
+
+  <div class="subtitle">
+    Enter a VRI™ Proof ID to confirm whether a proof record exists.
+    This public verification page only shows safe proof details and does not expose private document content,
+    sender phone numbers, private emails, recipient details, or internal event notes.
+  </div>
+
+  <div class="lookup-row">
+    <input id="proofInput" placeholder="Enter Proof ID, example: VRI-1777357933415" />
+    <button onclick="verifyPublicProof()">VERIFY PROOF</button>
+  </div>
+
+  <div id="output"></div>
+
+  <div class="safe-note">
+    Public-safe verification confirms the proof record, timestamp, integrity status, governance status, delivery status,
+    and audit presence. Full private receipt details remain protected inside the internal proof receipt workflow.
+  </div>
+
+  <div class="footer">
+    VRI™ · VERIFICATION & RISK INFRASTRUCTURE · PUBLIC PROOF LOOKUP
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString() : "N/A";
+}
+
+function shortHash(hash) {
+  if (!hash) return "N/A";
+  return hash.substring(0, 16) + "...";
+}
+
+function statusBadge(status) {
+  const value = (status || "UNKNOWN").toUpperCase();
+
+  if (value === "VERIFIED" || value === "GENERATED" || value === "MATCH" || value === "CONFIRMED" || value === "RECEIVED") {
+    return "<span class='badge badge-green'>" + value + "</span>";
+  }
+
+  if (value === "PENDING" || value === "SENT" || value === "OPENED_VIEWED" || value === "RESENT" || value === "STANDBY") {
+    return "<span class='badge badge-yellow'>" + value + "</span>";
+  }
+
+  if (value === "FAILED" || value === "MISMATCH" || value === "HIGH") {
+    return "<span class='badge badge-red'>" + value + "</span>";
+  }
+
+  return "<span class='badge badge-yellow'>" + value + "</span>";
+}
+
+function riskBadge(level) {
+  const value = (level || "N/A").toUpperCase();
+
+  if (value === "LOW") {
+    return "<span class='badge badge-green'>LOW RISK</span>";
+  }
+
+  if (value === "MEDIUM") {
+    return "<span class='badge badge-yellow'>MEDIUM RISK</span>";
+  }
+
+  if (value === "HIGH") {
+    return "<span class='badge badge-red'>HIGH RISK</span>";
+  }
+
+  return "<span class='badge badge-yellow'>N/A</span>";
+}
+
+function aiPublicStatus(documentRecord, proofRecord) {
+  const aiUsed = documentRecord?.ai_used === true || proofRecord?.ai_used === true;
+  const humanReviewed = documentRecord?.human_reviewed !== false && proofRecord?.human_reviewed !== false;
+  const aiStatus = documentRecord?.ai_content_status || proofRecord?.ai_content_status || "NOT_USED";
+
+  if (!aiUsed) {
+    return "<span class='badge badge-green'>AI NOT USED</span><br><span class='blue'>AI Content Status:</span> " + aiStatus;
+  }
+
+  if (humanReviewed) {
+    return "<span class='badge badge-yellow'>AI USED · HUMAN REVIEWED</span><br><span class='blue'>AI Content Status:</span> " + aiStatus;
+  }
+
+  return "<span class='badge badge-red'>AI USED · NOT HUMAN REVIEWED</span><br><span class='blue'>AI Content Status:</span> " + aiStatus;
+}
+
+async function verifyPublicProof() {
+  const proofId = document.getElementById("proofInput").value.trim();
+  const output = document.getElementById("output");
+
+  if (!proofId) {
+    output.innerHTML = `<div class="card red">Enter a Proof ID first.</div>`;
+    return;
+  }
+
+  output.innerHTML = `<div class="card blue">Checking public VRI proof record...</div>`;
+
+  try {
+    const { data: proofRecord, error: proofError } = await supabaseClient
+      .from("proof_records")
+      .select("*")
+      .eq("proof_id", proofId)
+      .maybeSingle();
+
+    if (proofError) throw proofError;
+
+    const { data: documentRecord, error: docError } = await supabaseClient
+      .from("documents")
+      .select("*")
+      .eq("proof_id", proofId)
+      .maybeSingle();
+
+    if (docError) throw docError;
+
+    const { data: recipientRecord, error: recipientError } = await supabaseClient
+      .from("recipients")
+      .select("*")
+      .eq("proof_id", proofId)
+      .maybeSingle();
+
+    if (recipientError) throw recipientError;
+
+    const { data: receiptRecord, error: receiptError } = await supabaseClient
+      .from("receipts")
+      .select("*")
+      .eq("proof_id", proofId)
+      .maybeSingle();
+
+    if (receiptError) throw receiptError;
+
+    const { data: events, error: eventError } = await supabaseClient
+      .from("verification_events")
+      .select("event_type, created_at")
+      .eq("proof_id", proofId)
+      .order("created_at", { ascending: true });
+
+    if (eventError) throw eventError;
+
+    if (!proofRecord && !documentRecord && (!events || events.length === 0)) {
+      output.innerHTML = `
+        <div class="card">
+          <h2 class="red">✖ PROOF RECORD NOT FOUND</h2>
+          <p>No public VRI proof record was found for this Proof ID.</p>
+          <p><span class="blue">Proof ID Searched:</span> ${proofId}</p>
+        </div>
+      `;
+      return;
+    }
+
+    const createdEvent = (events || []).find(e => e.event_type === "DOCUMENT_CREATED" || e.event_type === "EXTERNAL_PROOF_CREATED");
+    const fingerprintEvent = (events || []).find(e => e.event_type === "DOCUMENT_FINGERPRINT_CREATED");
+    const aiEvent = (events || []).find(e => e.event_type === "AI_CONTENT_DISCLOSURE_RECORDED");
+    const receiptEvent = (events || []).find(e => e.event_type === "RECEIPT_GENERATED");
+
+    const publicEventList = (events || [])
+      .map(e => e.event_type)
+      .filter(Boolean)
+      .slice(0, 12)
+      .join(", ");
+
+    output.innerHTML = `
+      <div class="card">
+        <h2 class="green">✔ PUBLIC PROOF VERIFIED</h2>
+        <p><span class="blue">Proof ID:</span> ${proofId}</p>
+        <p><span class="blue">Proof Status:</span> ${statusBadge(proofRecord?.status || "VERIFIED")}</p>
+        <p><span class="blue">Industry:</span> ${proofRecord?.industry || "general"}</p>
+        <p><span class="blue">Verification Intent:</span> ${proofRecord?.verification_intent || documentRecord?.verification_intent || "Recorded"}</p>
+        <p><span class="blue">Record Created:</span> ${formatDate(proofRecord?.created_at || documentRecord?.created_at || createdEvent?.created_at)}</p>
+      </div>
+
+      <div class="card">
+        <h3>Public Identity Summary</h3>
+        <p><span class="blue">Business / Organization:</span> ${proofRecord?.business_name || documentRecord?.business_name || documentRecord?.sender_business || "Recorded but not publicly displayed"}</p>
+        <p><span class="blue">Sender Details:</span> Protected</p>
+        <p><span class="blue">Recipient Details:</span> Protected</p>
+      </div>
+
+      <div class="card">
+        <h3>Document Integrity Summary</h3>
+        <p><span class="blue">Hash Algorithm:</span> ${proofRecord?.hash_algorithm || documentRecord?.hash_algorithm || "SHA-256"}</p>
+        <p><span class="blue">Hash Preview:</span> ${shortHash(proofRecord?.document_hash || documentRecord?.document_hash)}</p>
+        <p><span class="blue">Hash Status:</span> ${statusBadge(proofRecord?.hash_status || documentRecord?.hash_status || "N/A")}</p>
+        <p><span class="blue">Document Changed:</span> ${(proofRecord?.document_changed === true || documentRecord?.document_changed === true) ? "YES" : "NO"}</p>
+        <p><span class="blue">Fingerprint Event:</span> ${fingerprintEvent ? "Recorded" : "Not Found"}</p>
+        <p><span class="blue">Full Document Content:</span> Protected</p>
+      </div>
+
+      <div class="card">
+        <h3>AI Content Disclosure Summary</h3>
+        <p>${aiPublicStatus(documentRecord, proofRecord)}</p>
+        <p><span class="blue">AI Disclosure Event:</span> ${aiEvent ? "Recorded" : "Not Found"}</p>
+        <p><span class="blue">AI Disclosure Note:</span> Protected</p>
+      </div>
+
+      <div class="card">
+        <h3>HALO + ShiftGuard Summary</h3>
+        <p><span class="blue">HALO Status:</span> ${proofRecord?.halo_status || documentRecord?.halo_status || "N/A"}</p>
+        <p><span class="blue">HALO Risk:</span> ${riskBadge(proofRecord?.halo_risk_level || documentRecord?.halo_risk_level)}</p>
+        <p><span class="blue">ShiftGuard Status:</span> ${proofRecord?.shiftguard_status || documentRecord?.shiftguard_status || "N/A"}</p>
+        <p><span class="blue">ShiftGuard Mode:</span> ${proofRecord?.shiftguard_mode || documentRecord?.shiftguard_mode || "N/A"}</p>
+      </div>
+
+      <div class="card">
+        <h3>Delivery + Receipt Summary</h3>
+        <p><span class="blue">Delivery Status:</span> ${statusBadge(recipientRecord?.delivery_status || "PENDING")}</p>
+        <p><span class="blue">Last Delivery Event:</span> ${formatDate(recipientRecord?.last_delivery_event_at)}</p>
+        <p><span class="blue">Receipt Status:</span> ${statusBadge(receiptRecord?.receipt_status || "GENERATED")}</p>
+        <p><span class="blue">Receipt Created:</span> ${formatDate(receiptRecord?.created_at || receiptEvent?.created_at)}</p>
+      </div>
+
+      <div class="card">
+        <h3>Audit Trail Summary</h3>
+        <p><span class="blue">Audit Events Found:</span> ${(events || []).length}</p>
+        <p><span class="blue">Key Public Events:</span> ${publicEventList || "No public event summary available."}</p>
+        <p><span class="blue">Internal Event Notes:</span> Protected</p>
+      </div>
+    `;
+
+  } catch (error) {
+    console.error("Public proof verification error:", error);
+    output.innerHTML = `<div class="card red">Error: ${error.message}</div>`;
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const proofFromUrl = params.get("proof");
+
+  if (proofFromUrl) {
+    document.getElementById("proofInput").value = proofFromUrl;
+    verifyPublicProof();
+  }
+});
+</script>
+
+</body>
+</html>
