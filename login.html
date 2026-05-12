@@ -35,7 +35,7 @@ body {
 }
 
 .container {
-  max-width: 520px;
+  max-width: 540px;
   margin: 70px auto 0;
   background: rgba(2, 8, 24, 0.88);
   border: 1px solid rgba(30, 143, 255, 0.55);
@@ -108,6 +108,27 @@ button:hover {
   color: #ff6b6b;
 }
 
+.status-card {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px dashed rgba(143,191,255,0.45);
+  color: #b9d6ff;
+  border-radius: 10px;
+  line-height: 1.6;
+}
+
+.locked {
+  border: 1px solid rgba(255, 204, 0, 0.55);
+  background: rgba(80, 60, 0, 0.25);
+  color: #ffcc00;
+}
+
+.unlocked {
+  border: 1px solid rgba(0, 255, 153, 0.55);
+  background: rgba(0, 80, 40, 0.25);
+  color: #00ff99;
+}
+
 .small {
   margin-top: 18px;
   color: #8fbfff;
@@ -115,13 +136,8 @@ button:hover {
   line-height: 1.6;
 }
 
-.status-card {
-  margin-top: 18px;
-  padding: 14px;
-  border: 1px dashed rgba(143,191,255,0.45);
-  color: #b9d6ff;
-  border-radius: 10px;
-  line-height: 1.6;
+.hidden {
+  display: none;
 }
 
 @media(max-width: 760px) {
@@ -135,37 +151,63 @@ button:hover {
 
 <div class="nav">
   <a href="/index.html">System</a>
-  <a href="/proof-portal.html">Create Proof</a>
   <a href="/verify-proof.html">Verify Proof</a>
-  <a href="/verification-monitor.html">Monitor</a>
-  <a href="/supervisor-dashboard.html">Supervisor</a>
 </div>
 
 <div class="container">
   <h1>VRI™ Access Login</h1>
 
   <div class="subtitle">
-    Sign in to access protected VRI™ demo controls. This is the first login layer before full company/user role permissions are added.
+    Secure access screen for the VRI™ internal workspace. If a user session is already active, this screen locks and requires the password again before showing workspace buttons.
   </div>
 
-  <label>Email</label>
-  <input id="email" type="email" placeholder="Enter email">
+  <div id="loginForm">
+    <label>Email</label>
+    <input id="email" type="email" placeholder="Enter email">
 
-  <label>Password</label>
-  <input id="password" type="password" placeholder="Enter password">
+    <label>Password</label>
+    <input id="password" type="password" placeholder="Enter password">
 
-  <button onclick="signIn()">SIGN IN</button>
-  <button onclick="signUp()">CREATE LOGIN</button>
-  <button onclick="signOut()">SIGN OUT</button>
+    <button onclick="signIn()">SIGN IN</button>
+    <button onclick="signUp()">CREATE LOGIN</button>
+  </div>
+
+  <div id="lockForm" class="hidden">
+    <div class="status-card locked">
+      <strong>🔒 VRI WORKSPACE LOCKED</strong><br>
+      Active session detected, but workspace access is locked.<br>
+      Re-enter your password to unlock this browser session.
+    </div>
+
+    <label>Signed-in Email</label>
+    <input id="lockedEmail" type="email" readonly>
+
+    <label>Password Required</label>
+    <input id="unlockPassword" type="password" placeholder="Re-enter password to unlock">
+
+    <button onclick="unlockWorkspace()">UNLOCK WORKSPACE</button>
+    <button onclick="signOut()">SIGN OUT COMPLETELY</button>
+  </div>
+
+  <div id="workspacePanel" class="hidden">
+    <div class="status-card unlocked">
+      <strong>✅ WORKSPACE UNLOCKED</strong><br>
+      <span id="activeUserEmail"></span><br><br>
+      Access granted for this browser session.
+    </div>
+
+    <button onclick="window.location.href='/proof-portal.html'">GO TO PROOF PORTAL</button>
+    <button onclick="window.location.href='/verification-monitor.html'">GO TO MONITOR BOARD</button>
+    <button onclick="window.location.href='/supervisor-dashboard.html'">GO TO SUPERVISOR DASHBOARD</button>
+    <button onclick="window.location.href='/receipt.html'">GO TO RECEIPTS</button>
+    <button onclick="lockWorkspace()">LOCK WORKSPACE</button>
+    <button onclick="signOut()">SIGN OUT COMPLETELY</button>
+  </div>
 
   <div id="result" class="result"></div>
 
-  <div class="status-card" id="sessionBox">
-    Checking login status...
-  </div>
-
   <p class="small">
-    If signup says to check your email, Supabase email confirmation is turned on. Confirm the email first, then return here and sign in.
+    Public proof verification remains available without login. Internal proof creation, monitor, supervisor, and receipt tools should be treated as workspace controls.
   </p>
 </div>
 
@@ -178,6 +220,8 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
+const LOCK_KEY = "vri_workspace_unlocked";
+
 function showResult(message, isError = false) {
   const result = document.getElementById("result");
   result.style.display = "block";
@@ -185,24 +229,51 @@ function showResult(message, isError = false) {
   result.innerHTML = message;
 }
 
-async function checkSession() {
-  const sessionBox = document.getElementById("sessionBox");
+function hideAllPanels() {
+  document.getElementById("loginForm").classList.add("hidden");
+  document.getElementById("lockForm").classList.add("hidden");
+  document.getElementById("workspacePanel").classList.add("hidden");
+}
 
+function showLoginForm() {
+  hideAllPanels();
+  document.getElementById("loginForm").classList.remove("hidden");
+}
+
+function showLockForm(email) {
+  hideAllPanels();
+  document.getElementById("lockedEmail").value = email || "";
+  document.getElementById("unlockPassword").value = "";
+  document.getElementById("lockForm").classList.remove("hidden");
+}
+
+function showWorkspace(email) {
+  hideAllPanels();
+  document.getElementById("activeUserEmail").innerHTML = "Logged in as: " + email;
+  document.getElementById("workspacePanel").classList.remove("hidden");
+}
+
+async function checkSession() {
   const { data, error } = await supabaseClient.auth.getSession();
 
   if (error) {
-    sessionBox.innerHTML = "Session check error: " + error.message;
+    showResult("Session check error: " + error.message, true);
+    showLoginForm();
     return;
   }
 
-  if (data.session && data.session.user) {
-    sessionBox.innerHTML =
-      "<strong>Logged In:</strong><br>" +
-      data.session.user.email + "<br><br>" +
-      "<button onclick=\"window.location.href='/proof-portal.html'\">GO TO PROOF PORTAL</button>" +
-      "<button onclick=\"window.location.href='/supervisor-dashboard.html'\">GO TO SUPERVISOR DASHBOARD</button>";
+  if (!data.session || !data.session.user) {
+    localStorage.removeItem(LOCK_KEY);
+    showLoginForm();
+    return;
+  }
+
+  const email = data.session.user.email;
+
+  if (localStorage.getItem(LOCK_KEY) === "true") {
+    showWorkspace(email);
   } else {
-    sessionBox.innerHTML = "Not logged in.";
+    showLockForm(email);
   }
 }
 
@@ -215,19 +286,20 @@ async function signUp() {
     return;
   }
 
- const { data, error } = await supabaseClient.auth.signUp({
-  email,
-  password,
-  options: {
-    emailRedirectTo: window.location.origin + "/login.html"
-  }
-});
-  
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: window.location.origin + "/login.html"
+    }
+  });
 
   if (error) {
     showResult("Signup failed: " + error.message, true);
     return;
   }
+
+  localStorage.removeItem(LOCK_KEY);
 
   showResult(
     "Login created or confirmation email sent.<br>If Supabase requires email confirmation, check your email before signing in."
@@ -255,11 +327,45 @@ async function signIn() {
     return;
   }
 
-  showResult("Signed in successfully.");
+  localStorage.setItem(LOCK_KEY, "true");
+  showResult("Signed in and workspace unlocked.");
   await checkSession();
 }
 
+async function unlockWorkspace() {
+  const email = document.getElementById("lockedEmail").value.trim();
+  const password = document.getElementById("unlockPassword").value;
+
+  if (!email || !password) {
+    showResult("Enter your password to unlock the workspace.", true);
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    localStorage.removeItem(LOCK_KEY);
+    showResult("Unlock failed: " + error.message, true);
+    return;
+  }
+
+  localStorage.setItem(LOCK_KEY, "true");
+  showResult("Workspace unlocked.");
+  await checkSession();
+}
+
+function lockWorkspace() {
+  localStorage.removeItem(LOCK_KEY);
+  showResult("Workspace locked. Password required to unlock.");
+  checkSession();
+}
+
 async function signOut() {
+  localStorage.removeItem(LOCK_KEY);
+
   const { error } = await supabaseClient.auth.signOut();
 
   if (error) {
@@ -267,8 +373,8 @@ async function signOut() {
     return;
   }
 
-  showResult("Signed out successfully.");
-  await checkSession();
+  showResult("Signed out completely.");
+  showLoginForm();
 }
 
 window.addEventListener("DOMContentLoaded", checkSession);
