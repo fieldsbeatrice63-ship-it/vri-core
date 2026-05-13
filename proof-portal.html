@@ -7,6 +7,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <style id="vri-guard-hide">
+  body {
+    visibility: hidden;
+  }
+</style>
+
 <style>
 * {
   box-sizing: border-box;
@@ -230,11 +236,14 @@ async function vriWorkspaceGuard() {
 
     window.location.href =
       "/login.html?redirect=" + encodeURIComponent(currentPage);
+
+    return;
   }
+
+  document.body.style.visibility = "visible";
 }
 
 vriWorkspaceGuard();
-
 
 let lastProofId = "";
 
