@@ -340,6 +340,24 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
+  <script>
+async function vriWorkspaceGuard() {
+  const unlocked = localStorage.getItem("vri_workspace_unlocked") === "true";
+
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error || !data.session || !data.session.user || !unlocked) {
+    localStorage.removeItem("vri_workspace_unlocked");
+
+    const currentPage = window.location.pathname + window.location.search;
+
+    window.location.href =
+      "/login.html?redirect=" + encodeURIComponent(currentPage);
+  }
+}
+
+vriWorkspaceGuard();
+</script>
 
 let currentProofId = "";
 
