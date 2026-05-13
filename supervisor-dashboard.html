@@ -7,6 +7,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <style id="vri-guard-hide">
+  body {
+    visibility: hidden;
+  }
+</style>
+
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -293,7 +299,7 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
-  async function vriWorkspaceGuard() {
+ async function vriWorkspaceGuard() {
   const unlocked = localStorage.getItem("vri_workspace_unlocked") === "true";
 
   const { data, error } = await supabaseClient.auth.getSession();
@@ -305,7 +311,11 @@ const supabaseClient = window.supabase.createClient(
 
     window.location.href =
       "/login.html?redirect=" + encodeURIComponent(currentPage);
+
+    return;
   }
+
+  document.body.style.visibility = "visible";
 }
 
 vriWorkspaceGuard();
