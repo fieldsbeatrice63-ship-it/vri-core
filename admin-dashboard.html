@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Admin Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style id="vri-guard-hide">
+  body {
+    visibility: hidden;
+  }
+</style>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #020818;
+  --panel: rgba(2, 8, 24, 0.88);
+  --card: rgba(0, 20, 50, 0.58);
+  --border: rgba(30, 143, 255, 0.45);
+  --blue: #8fbfff;
+  --cyan: #00c8ff;
+  --green: #00ff99;
+  --yellow: #ffcc00;
+  --red: #ff6b6b;
+  --text: #e8f4ff;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at center, rgba(0,200,255,0.12), transparent 38%),
+    linear-gradient(135deg, #020818, #040d2a, #020c1e);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+  padding: 34px;
+}
+
+.nav {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  z-index: 999;
+  font-size: 12px;
+}
+
+.nav a {
+  color: var(--blue);
+  margin-left: 14px;
+  text-decoration: none;
+}
+
+.container {
+  max-width: 1180px;
+  margin: 42px auto 0;
+}
+
+.header {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 0 24px rgba(0, 140, 255, 0.25);
+}
+
+h1 {
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--blue);
+  line-height: 1.6;
+}
+
+.badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.green { color: var(--green); }
+.yellow { color: var(--yellow); }
+.red { color: var(--red); }
+.blue { color: var(--blue); }
+
+.badge-green {
+  color: var(--green);
+  border: 1px solid var(--green);
+  background: rgba(0,255,153,0.08);
+}
+
+.badge-yellow {
+  color: var(--yellow);
+  border: 1px solid var(--yellow);
+  background: rgba(255,204,0,0.08);
+}
+
+.badge-red {
+  color: var(--red);
+  border: 1px solid var(--red);
+  background: rgba(255,60,60,0.08);
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.stats {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.two-col {
+  grid-template-columns: 1.2fr 1fr;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 0 18px rgba(0, 140, 255, 0.12);
+}
+
+.card h2,
+.card h3 {
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat strong {
+  display: block;
+  font-size: 38px;
+  margin-bottom: 6px;
+}
+
+.stat span {
+  color: var(--blue);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.stat.low { border-color: rgba(0,255,153,.55); }
+.stat.medium { border-color: rgba(255,204,0,.55); }
+.stat.high { border-color: rgba(255,60,60,.55); }
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+button,
+.button-link {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #1e8fff;
+  background: rgba(0, 80, 255, 0.25);
+  color: white;
+  border-radius: 8px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+
+button:hover,
+.button-link:hover {
+  background: rgba(0, 120, 255, 0.35);
+}
+
+.item {
+  border: 1px solid rgba(143,191,255,0.25);
+  background: rgba(2, 8, 24, 0.45);
+  border-radius: 10px;
+  padding: 13px;
+  margin-top: 10px;
+  line-height: 1.55;
+  cursor: pointer;
+}
+
+.item:hover {
+  border-color: var(--cyan);
+}
+
+.item strong {
+  color: white;
+}
+
+.small {
+  color: var(--blue);
+  font-size: 13px;
+}
+
+.footer-note {
+  margin-top: 18px;
+  color: var(--blue);
+  font-size: 12px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+@media(max-width: 900px) {
+  body { padding: 22px; }
+  .nav { position: static; margin-bottom: 18px; }
+  .stats,
+  .two-col,
+  .quick-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="nav">
+  <a href="/login.html">Login</a>
+  <a href="/admin-dashboard.html">Admin</a>
+  <a href="/proof-portal.html">Create Proof</a>
+  <a href="/verify-proof.html">Verify Proof</a>
+  <a href="/verification-monitor.html">Monitor</a>
+  <a href="/supervisor-dashboard.html">Supervisor</a>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <h1>VRI™ Administrative Dashboard</h1>
+    <div class="subtitle">
+      Internal workspace overview for proof records, HALO risk, ShiftGuard Clinical escalations,
+      delivery lifecycle, audit activity, and API-created verification records.
+    </div>
+    <br>
+    <span class="badge badge-green">WORKSPACE LOCKED BY AUTH</span>
+    <span class="badge badge-yellow">ADMIN VIEW</span>
+    <span class="badge badge-green">LIVE SUPABASE DATA</span>
+  </div>
+
+  <div class="grid stats">
+    <div class="card stat">
+      <strong id="totalProofs">0</strong>
+      <span>TOTAL PROOF RECORDS</span>
+    </div>
+
+    <div class="card stat low">
+      <strong id="lowRisk" class="green">0</strong>
+      <span>LOW RISK</span>
+    </div>
+
+    <div class="card stat medium">
+      <strong id="mediumRisk" class="yellow">0</strong>
+      <span>MEDIUM RISK</span>
+    </div>
+
+    <div class="card stat high">
+      <strong id="highRisk" class="red">0</strong>
+      <span>HIGH RISK</span>
+    </div>
+  </div>
+
+  <div class="grid stats">
+    <div class="card stat">
+      <strong id="pendingDelivery" class="yellow">0</strong>
+      <span>DELIVERY PENDING</span>
+    </div>
+
+    <div class="card stat">
+      <strong id="confirmedDelivery" class="green">0</strong>
+      <span>DELIVERY CONFIRMED</span>
+    </div>
+
+    <div class="card stat high">
+      <strong id="openEscalations" class="red">0</strong>
+      <span>OPEN ESCALATIONS</span>
+    </div>
+
+    <div class="card stat">
+      <strong id="eventCount" class="blue">0</strong>
+      <span>RECENT EVENTS</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Quick Actions</h2>
+      <div class="quick-grid">
+        <a class="button-link" href="/proof-portal.html">CREATE PROOF</a>
+        <a class="button-link" href="/receipt.html">OPEN RECEIPTS</a>
+        <a class="button-link" href="/verify-proof.html">PUBLIC VERIFY</a>
+        <a class="button-link" href="/verification-monitor.html">MONITOR BOARD</a>
+        <a class="button-link" href="/supervisor-dashboard.html">SUPERVISOR DASHBOARD</a>
+        <a class="button-link" href="/login.html">LOCK / SIGN OUT</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid two-col">
+    <div class="card">
+      <h2>Recent Proof Records</h2>
+      <div id="recentProofs" class="small">Loading recent proofs...</div>
+    </div>
+
+    <div class="card">
+      <h2>Open Escalations</h2>
+      <div id="escalationList" class="small">Loading escalations...</div>
+    </div>
+  </div>
+
+  <div class="grid two-col">
+    <div class="card">
+      <h2>Recent Verification Events</h2>
+      <div id="recentEvents" class="small">Loading events...</div>
+    </div>
+
+    <div class="card">
+      <h2>System Summary</h2>
+      <div id="systemSummary" class="small">Loading system summary...</div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    VRI™ · VERIFICATION & RISK INFRASTRUCTURE · ADMINISTRATIVE WORKSPACE
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://atoklygiqhyfuorhtmfl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b2tseWdpcWh5ZnVvcmh0bWZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjY0MTIsImV4cCI6MjA5MjkwMjQxMn0.XEJ2_ggEmATIOv80-ernjFizRqw6tTcUJS_JW9Xbqp0";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+async function vriWorkspaceGuard() {
+  const unlocked = localStorage.getItem("vri_workspace_unlocked") === "true";
+
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error || !data.session || !data.session.user || !unlocked) {
+    localStorage.removeItem("vri_workspace_unlocked");
+
+    const currentPage = window.location.pathname + window.location.search;
+
+    window.location.href =
+      "/login.html?redirect=" + encodeURIComponent(currentPage);
+
+    return;
+  }
+
+  document.body.style.visibility = "visible";
+}
+
+vriWorkspaceGuard();
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString() : "N/A";
+}
+
+function normalizeRisk(value) {
+  const risk = (value || "LOW").toUpperCase();
+  if (risk === "HIGH") return "HIGH";
+  if (risk === "MEDIUM") return "MEDIUM";
+  return "LOW";
+}
+
+function riskBadge(value) {
+  const risk = normalizeRisk(value);
+
+  if (risk === "HIGH") {
+    return "<span class='badge badge-red'>HIGH RISK</span>";
+  }
+
+  if (risk === "MEDIUM") {
+    return "<span class='badge badge-yellow'>MEDIUM RISK</span>";
+  }
+
+  return "<span class='badge badge-green'>LOW RISK</span>";
+}
+
+function deliveryBadge(value) {
+  const status = (value || "PENDING").toUpperCase();
+
+  if (status === "CONFIRMED" || status === "RECEIVED") {
+    return "<span class='badge badge-green'>" + status + "</span>";
+  }
+
+  if (status === "FAILED") {
+    return "<span class='badge badge-red'>FAILED</span>";
+  }
+
+  return "<span class='badge badge-yellow'>" + status + "</span>";
+}
+
+function openReceipt(proofId) {
+  window.location.href = "/receipt.html?proof=" + encodeURIComponent(proofId);
+}
+
+function openIncident(proofId) {
+  window.location.href = "/incident-file.html?proof=" + encodeURIComponent(proofId);
+}
+
+async function safeSelect(table, queryBuilder) {
+  try {
+    const result = await queryBuilder;
+    if (result.error) {
+      console.warn(table + " load warning:", result.error.message);
+      return [];
+    }
+    return result.data || [];
+  } catch (error) {
+    console.warn(table + " load failed:", error.message);
+    return [];
+  }
+}
+
+async function loadAdminDashboard() {
+  const proofs = await safeSelect(
+    "proof_records",
+    supabaseClient
+      .from("proof_records")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50)
+  );
+
+  const recipients = await safeSelect(
+    "recipients",
+    supabaseClient
+      .from("recipients")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100)
+  );
+
+  const events = await safeSelect(
+    "verification_events",
+    supabaseClient
+      .from("verification_events")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(80)
+  );
+
+  const escalations = await safeSelect(
+    "execution_escalations",
+    supabaseClient
+      .from("execution_escalations")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50)
+  );
+
+  const low = proofs.filter(p => normalizeRisk(p.halo_risk_level) === "LOW").length;
+  const medium = proofs.filter(p => normalizeRisk(p.halo_risk_level) === "MEDIUM").length;
+  const high = proofs.filter(p => normalizeRisk(p.halo_risk_level) === "HIGH").length;
+
+  const pendingDelivery = recipients.filter(r =>
+    !r.delivery_status ||
+    String(r.delivery_status).toUpperCase() === "PENDING" ||
+    String(r.delivery_status).toUpperCase() === "SENT" ||
+    String(r.delivery_status).toUpperCase() === "RESENT"
+  ).length;
+
+  const confirmedDelivery = recipients.filter(r =>
+    String(r.delivery_status).toUpperCase() === "CONFIRMED" ||
+    String(r.delivery_status).toUpperCase() === "RECEIVED" ||
+    String(r.delivery_status).toUpperCase() === "OPENED_VIEWED"
+  ).length;
+
+  const openEscalations = escalations.filter(e =>
+    !e.escalation_status ||
+    String(e.escalation_status).toUpperCase() === "OPEN"
+  ).length;
+
+  document.getElementById("totalProofs").textContent = proofs.length;
+  document.getElementById("lowRisk").textContent = low;
+  document.getElementById("mediumRisk").textContent = medium;
+  document.getElementById("highRisk").textContent = high;
+  document.getElementById("pendingDelivery").textContent = pendingDelivery;
+  document.getElementById("confirmedDelivery").textContent = confirmedDelivery;
+  document.getElementById("openEscalations").textContent = openEscalations;
+  document.getElementById("eventCount").textContent = events.length;
+
+  document.getElementById("recentProofs").innerHTML = proofs.slice(0, 8).map(p => `
+    <div class="item" onclick="openReceipt('${p.proof_id}')">
+      <strong>${p.proof_id}</strong><br>
+      ${riskBadge(p.halo_risk_level)}
+      <br>
+      Status: ${p.status || "VERIFIED"}<br>
+      Business: ${p.business_name || "N/A"}<br>
+      Source: ${p.source || "N/A"}<br>
+      Created: ${formatDate(p.created_at)}
+    </div>
+  `).join("") || "No proof records found.";
+
+  document.getElementById("escalationList").innerHTML = escalations.slice(0, 8).map(e => `
+    <div class="item" onclick="openIncident('${e.proof_id}')">
+      <strong>${e.proof_id || "NO PROOF ID"}</strong><br>
+      <span class="badge badge-red">${e.risk_level || "RISK"}</span>
+      <br>
+      Status: ${e.escalation_status || "OPEN"}<br>
+      Actor: ${e.actor_name || "N/A"}<br>
+      Action: ${e.action || "N/A"}<br>
+      Created: ${formatDate(e.created_at || e.escalation_timestamp)}
+    </div>
+  `).join("") || "No open escalations found.";
+
+  document.getElementById("recentEvents").innerHTML = events.slice(0, 10).map(e => `
+    <div class="item" onclick="openReceipt('${e.proof_id}')">
+      <strong>${e.event_type || "EVENT"}</strong><br>
+      Proof ID: ${e.proof_id || "N/A"}<br>
+      Status: ${e.status || "RECORDED"}<br>
+      Created: ${formatDate(e.created_at)}
+    </div>
+  `).join("") || "No verification events found.";
+
+  document.getElementById("systemSummary").innerHTML = `
+    <div class="item">
+      <strong>System State</strong><br>
+      Proof records loaded: ${proofs.length}<br>
+      Recipient records loaded: ${recipients.length}<br>
+      Verification events loaded: ${events.length}<br>
+      Escalations loaded: ${escalations.length}<br>
+      High-risk records: ${high}<br>
+      Open escalations: ${openEscalations}<br>
+      Last refresh: ${new Date().toLocaleString()}
+    </div>
+
+    <div class="item">
+      <strong>Architecture</strong><br>
+      Public: verify-proof.html<br>
+      Internal: login, proof portal, receipt, monitor, supervisor, incident file<br>
+      Backend: Render API + Supabase proof storage<br>
+      Status: Working MVP
+    </div>
+  `;
+}
+
+loadAdminDashboard();
+setInterval(loadAdminDashboard, 12000);
+</script>
+
+</body>
+</html>
