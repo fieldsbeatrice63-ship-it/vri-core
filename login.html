@@ -247,7 +247,31 @@ function showLockForm(email) {
   document.getElementById("lockForm").classList.remove("hidden");
 }
 
+function getRedirectTarget() {
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get("redirect");
+
+  if (!redirect) return "";
+
+  if (
+    redirect.includes("http://") ||
+    redirect.includes("https://") ||
+    redirect.includes("//")
+  ) {
+    return "";
+  }
+
+  return redirect;
+}
+
 function showWorkspace(email) {
+  const redirectTarget = getRedirectTarget();
+
+  if (redirectTarget) {
+    window.location.href = redirectTarget;
+    return;
+  }
+
   hideAllPanels();
   document.getElementById("activeUserEmail").innerHTML = "Logged in as: " + email;
   document.getElementById("workspacePanel").classList.remove("hidden");
