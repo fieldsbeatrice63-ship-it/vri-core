@@ -217,7 +217,7 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
-  <script>
+ 
 async function vriWorkspaceGuard() {
   const unlocked = localStorage.getItem("vri_workspace_unlocked") === "true";
 
@@ -234,7 +234,7 @@ async function vriWorkspaceGuard() {
 }
 
 vriWorkspaceGuard();
-</script>
+
 
 let lastProofId = "";
 
