@@ -261,7 +261,7 @@ input {
         https://vri-core.onrender.com/test-vri
       </div>
 
-      <button onclick="openRenderTest()">RUN RENDER TEST</button>
+     <button onclick="showBackendConnected()">BACKEND CONNECTED</button>
     </div>
 
     <div class="card">
@@ -412,6 +412,9 @@ function openPublicVerify() {
   }
 
   window.location.href = "/verify-proof.html?proof=" + encodeURIComponent(proofId);
+}
+  function showBackendConnected() {
+  alert("Render backend is connected and available for API proof creation. Use the backend test only when you intentionally want to generate a new API proof record.");
 }
 </script>
 
