@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VRI™ Connect</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at center, rgba(0,200,255,0.12), transparent 38%),
+    linear-gradient(135deg, #020818, #040d2a, #020c1e);
+  color: #e8f4ff;
+  font-family: Arial, sans-serif;
+  padding: 80px 34px 40px;
+}
+
+.vri-top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  min-height: 38px;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 8px 18px;
+  background: rgba(2, 8, 24, 0.88);
+  border-bottom: 1px solid rgba(30, 143, 255, 0.28);
+  backdrop-filter: blur(8px);
+}
+
+.vri-top-nav a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.vri-top-nav a:hover {
+  color: #00ff99;
+  text-shadow: 0 0 8px rgba(0,255,153,0.45);
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.header {
+  background: rgba(2, 8, 24, 0.88);
+  border: 1px solid rgba(30, 143, 255, 0.55);
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 0 24px rgba(0, 140, 255, 0.25);
+}
+
+h1 {
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  font-size: 34px;
+}
+
+.subtitle {
+  color: #8fbfff;
+  line-height: 1.6;
+  max-width: 840px;
+}
+
+.badge-row {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.badge-green {
+  color: #00ff99;
+  border: 1px solid #00ff99;
+  background: rgba(0, 255, 153, 0.08);
+}
+
+.badge-blue {
+  color: #8fbfff;
+  border: 1px solid #1e8fff;
+  background: rgba(30, 143, 255, 0.08);
+}
+
+.badge-yellow {
+  color: #ffcc00;
+  border: 1px solid #ffcc00;
+  background: rgba(255, 204, 0, 0.08);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.card {
+  background: rgba(0, 20, 50, 0.58);
+  border: 1px solid rgba(30, 143, 255, 0.45);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 0 18px rgba(0, 140, 255, 0.12);
+  line-height: 1.6;
+}
+
+.card h2,
+.card h3 {
+  margin-bottom: 10px;
+  color: #ffffff;
+}
+
+.card p {
+  color: #b9d6ff;
+  font-size: 14px;
+}
+
+.code-box {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(143, 191, 255, 0.22);
+  color: #00ff99;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  overflow-wrap: break-word;
+  line-height: 1.5;
+}
+
+button,
+.button-link {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #1e8fff;
+  background: rgba(0, 80, 255, 0.25);
+  color: white;
+  border-radius: 8px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+
+button:hover,
+.button-link:hover {
+  background: rgba(0, 120, 255, 0.35);
+}
+
+input {
+  width: 100%;
+  margin-top: 12px;
+  padding: 13px;
+  background: #06142d;
+  border: 1px solid #1e8fff;
+  color: white;
+  border-radius: 8px;
+  outline: none;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.footer-note {
+  margin-top: 20px;
+  text-align: center;
+  color: #8fbfff;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+@media(max-width: 900px) {
+  body {
+    padding: 90px 22px 30px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vri-top-nav {
+    justify-content: flex-start;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="vri-top-nav">
+  <a href="/index.html">System</a>
+  <a href="/login.html">Login / Lock</a>
+  <a href="/admin-dashboard.html">Admin</a>
+  <a href="/proof-portal.html">Create Proof</a>
+  <a href="/receipt.html">Receipt</a>
+  <a href="/verification-monitor.html">Monitor</a>
+  <a href="/supervisor-dashboard.html">Supervisor</a>
+  <a href="/incident-file.html">Incident</a>
+  <a href="/verify-proof.html">Verify Proof</a>
+  <a href="/connect.html">Connect</a>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <h1>VRI™ Connect</h1>
+
+    <div class="subtitle">
+      Connect external systems into VRI™ Verification & Risk Infrastructure.
+      This page explains how enterprise systems, apps, AI tools, document platforms,
+      financial systems, healthcare systems, legal workflows, and internal company actions can create verified proof records through the VRI backend API.
+    </div>
+
+    <div class="badge-row">
+      <span class="badge badge-green">API ACCESS</span>
+      <span class="badge badge-blue">RENDER BACKEND</span>
+      <span class="badge badge-yellow">SUPABASE PROOF STORAGE</span>
+      <span class="badge badge-green">HALO + SHIFTGUARD ACTIVE</span>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <h2>1. Backend API Test</h2>
+      <p>
+        Run a live backend test. This creates a new API-generated proof record,
+        document record, receipt, verification events, execution session, and escalation if risk is high.
+      </p>
+
+      <div class="code-box">
+        https://vri-core.onrender.com/test-vri
+      </div>
+
+      <button onclick="openRenderTest()">RUN RENDER TEST</button>
+    </div>
+
+    <div class="card">
+      <h2>2. Audit Lookup</h2>
+      <p>
+        Enter a Proof ID and open the backend audit route.
+        This confirms the full backend audit chain exists.
+      </p>
+
+      <input id="auditProofId" placeholder="Enter Proof ID, example: VRI-API-..." />
+
+      <button onclick="openBackendAudit()">OPEN BACKEND AUDIT</button>
+    </div>
+
+    <div class="card">
+      <h2>3. Frontend Receipt</h2>
+      <p>
+        Enter the same Proof ID and open the internal VRI receipt page.
+        This confirms Netlify can pull records created by the Render backend.
+      </p>
+
+      <input id="receiptProofId" placeholder="Enter Proof ID, example: VRI-API-..." />
+
+      <button onclick="openReceipt()">OPEN RECEIPT</button>
+    </div>
+
+    <div class="card">
+      <h2>4. Public Verification</h2>
+      <p>
+        Open the public-safe proof verification page.
+        This confirms the proof exists without exposing private document content or internal event notes.
+      </p>
+
+      <input id="verifyProofId" placeholder="Enter Proof ID, example: VRI-API-..." />
+
+      <button onclick="openPublicVerify()">OPEN VERIFY PROOF</button>
+    </div>
+
+    <div class="card">
+      <h2>5. Integration Endpoint</h2>
+      <p>
+        External systems connect to this endpoint to create VRI proof records.
+        This is the enterprise API route used by apps, platforms, or partner systems.
+      </p>
+
+      <div class="code-box">
+        POST https://vri-core.onrender.com/api/vri/verify
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>6. Internal Workspace</h2>
+      <p>
+        Use the protected workspace for proof creation, admin oversight,
+        risk monitoring, supervisor review, and incident files.
+      </p>
+
+      <a class="button-link" href="/login.html">OPEN LOGIN / LOCK</a>
+      <a class="button-link" href="/admin-dashboard.html">OPEN ADMIN DASHBOARD</a>
+    </div>
+
+    <div class="card full">
+      <h2>VRI™ Connection Flow</h2>
+      <p>
+        This is the full architecture flow used in the demo:
+      </p>
+
+      <div class="code-box">
+        External System → VRI Render API → Supabase Proof Storage → Receipt → Public Verify → Monitor Board → Supervisor Dashboard → Incident File
+      </div>
+    </div>
+
+    <div class="card full">
+      <h2>Example API Payload</h2>
+
+      <div class="code-box">
+{
+  "api_key": "VRI_TEST_KEY_001",
+  "actor_name": "Example User",
+  "actor_email": "example@company.com",
+  "actor_phone": "555-555-0000",
+  "department": "Compliance",
+  "action": "Document Authorization",
+  "risk_level": "HIGH",
+  "industry": "enterprise",
+  "business_name": "Connected Company",
+  "recipient_name": "Review Desk",
+  "recipient_email": "review@example.com",
+  "verification_intent": "API Verification",
+  "document_title": "Connected System Proof",
+  "document_content": "This proof was created by an external connected system.",
+  "ai_used": true,
+  "ai_tool_name": "Connected AI Tool",
+  "human_reviewed": true,
+  "ai_disclosure_note": "AI helped prepare the record and a human reviewed it."
+}
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-note">
+    VRI™ · VERIFICATION & RISK INFRASTRUCTURE · CONNECTED SYSTEMS ACCESS
+  </div>
+
+</div>
+
+<script>
+function cleanProofId(value) {
+  return String(value || "").trim();
+}
+
+function openRenderTest() {
+  window.open("https://vri-core.onrender.com/test-vri", "_blank");
+}
+
+function openBackendAudit() {
+  const proofId = cleanProofId(document.getElementById("auditProofId").value);
+
+  if (!proofId) {
+    alert("Enter a Proof ID first.");
+    return;
+  }
+
+  window.open(
+    "https://vri-core.onrender.com/api/vri/audit/" + encodeURIComponent(proofId),
+    "_blank"
+  );
+}
+
+function openReceipt() {
+  const proofId = cleanProofId(document.getElementById("receiptProofId").value);
+
+  if (!proofId) {
+    alert("Enter a Proof ID first.");
+    return;
+  }
+
+  window.location.href = "/receipt.html?proof=" + encodeURIComponent(proofId);
+}
+
+function openPublicVerify() {
+  const proofId = cleanProofId(document.getElementById("verifyProofId").value);
+
+  if (!proofId) {
+    alert("Enter a Proof ID first.");
+    return;
+  }
+
+  window.location.href = "/verify-proof.html?proof=" + encodeURIComponent(proofId);
+}
+</script>
+
+</body>
+</html>
