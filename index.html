@@ -189,7 +189,37 @@ svg {
   animation: rotateCore 22s linear infinite;
   transform-origin: 600px 424px;
 }
+.vri-top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  min-height: 38px;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 8px 18px;
+  background: rgba(2, 8, 24, 0.88);
+  border-bottom: 1px solid rgba(30, 143, 255, 0.28);
+  backdrop-filter: blur(8px);
+}
 
+.vri-top-nav a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.vri-top-nav a:hover {
+  color: #00ff99;
+  text-shadow: 0 0 8px rgba(0,255,153,0.45);
+}
 @keyframes pulse {
   0%, 100% { opacity: 0.25; transform: scale(1); }
   50% { opacity: 0.9; transform: scale(1.04); }
@@ -235,8 +265,8 @@ const supabaseClient = window.supabase.createClient(
 <body>
 
  
- <div style="position:absolute; top:15px; right:20px; z-index:999; font-size:12px;">
- <div class="nav">
+
+ <div class="vri-top-nav">
   <a href="/index.html">System</a>
   <a href="/login.html">Login / Lock</a>
   <a href="/admin-dashboard.html">Admin</a>
