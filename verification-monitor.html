@@ -413,6 +413,37 @@ body {
   border: 1px solid var(--red);
   background: rgba(255,60,60,.08);
 }
+  .vri-top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  min-height: 38px;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 8px 18px;
+  background: rgba(2, 8, 24, 0.88);
+  border-bottom: 1px solid rgba(30, 143, 255, 0.28);
+  backdrop-filter: blur(8px);
+}
+
+.vri-top-nav a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.vri-top-nav a:hover {
+  color: #00ff99;
+  text-shadow: 0 0 8px rgba(0,255,153,0.45);
+}
 
 .footer {
   font-size: 11px;
@@ -470,7 +501,7 @@ body {
 
 <body>
 
-<div class="nav">
+<div class="vri-top-nav">
   <a href="/index.html">System</a>
   <a href="/login.html">Login / Lock</a>
   <a href="/admin-dashboard.html">Admin</a>
