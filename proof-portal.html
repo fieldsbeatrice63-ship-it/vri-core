@@ -922,7 +922,13 @@ async function createProof() {
 async function createProofExternal(payload) {
   try {
     const proofId = payload.proof_id || "VRI-EXT-" + Date.now();
-    const companyId = payload.company_id || "CONNECTED_COMPANY_DEMO";
+
+    const workspace = await loadProofWorkspace();
+    const ownershipFields = buildOwnershipFields(workspace);
+
+    const companyId = payload.company_id || ownershipFields.company_id || "CONNECTED_COMPANY_DEMO";
+    ownershipFields.company_id = companyId;
+
     const source = "external_plugin";
     lastProofId = proofId;
 
@@ -966,7 +972,8 @@ async function createProofExternal(payload) {
       .from("documents")
       .insert([{
         proof_id: proofId,
-        company_id: companyId,
+        ...ownershipFields,
+
         document_title: documentTitle,
         document_type: "external_proof_document",
         document_content: documentContent,
@@ -1019,7 +1026,8 @@ async function createProofExternal(payload) {
       .from("proof_records")
       .insert([{
         proof_id: proofId,
-        company_id: companyId,
+        ...ownershipFields,
+
         event_type: "created",
         source: source,
         industry: industry,
@@ -1059,7 +1067,7 @@ async function createProofExternal(payload) {
 
     const { error: eventError } = await supabaseClient
       .from("verification_events")
-      .insert([
+      .insert(addOwnershipToEvents([
         {
           proof_id: proofId,
           event_type: "EXTERNAL_PROOF_CREATED",
@@ -1124,7 +1132,7 @@ async function createProofExternal(payload) {
           event_type: "RECEIPT_GENERATED",
           event_note: "Receipt generated for external verification proof"
         }
-      ]);
+      ], ownershipFields));
 
     if (eventError) throw eventError;
 
@@ -1132,7 +1140,8 @@ async function createProofExternal(payload) {
       .from("recipients")
       .insert([{
         proof_id: proofId,
-        company_id: companyId,
+        ...ownershipFields,
+
         recipient_name: recipientName,
         recipient_email: recipientEmail,
         recipient_phone: recipientPhone,
@@ -1156,7 +1165,8 @@ async function createProofExternal(payload) {
       .from("receipts")
       .insert([{
         proof_id: proofId,
-        company_id: companyId,
+        ...ownershipFields,
+
         receipt_status: "GENERATED",
         receipt_note: "Verified proof receipt generated through VRI external system connection"
       }]);
@@ -1167,6 +1177,8 @@ async function createProofExternal(payload) {
       success: true,
       proof_id: proofId,
       company_id: companyId,
+      created_by_email: ownershipFields.created_by_email,
+      company_user_role: ownershipFields.company_user_role,
       status: "VERIFIED",
       business_name: businessName,
       verification_intent: verificationIntent,
@@ -1208,7 +1220,6 @@ async function createProofExternal(payload) {
     };
   }
 }
-
 async function testExternalPlugin() {
   const resultBox = document.getElementById("result");
 
