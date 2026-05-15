@@ -1309,6 +1309,9 @@ async function simulateHospitalExecution() {
     return;
   }
 
+  const workspace = await loadProofWorkspace();
+  const ownershipFields = buildOwnershipFields(workspace);
+
   const scenarios = [
     {
       sector: "Healthcare",
@@ -1378,6 +1381,8 @@ async function simulateHospitalExecution() {
       .from("verification_events")
       .insert([{
         proof_id: lastProofId,
+        ...ownershipFields,
+
         event_type: "SHIFTGUARD_PROTECTED_EXECUTION",
         event_note:
           "Execution ID: " + executionId +
@@ -1400,6 +1405,9 @@ async function simulateHospitalExecution() {
       "<strong>⚙ ShiftGuard Clinical™ PROTECTED EXECUTION DEMO</strong><br><br>" +
       "Execution ID: " + executionId + "<br>" +
       "Linked Proof ID: " + lastProofId + "<br>" +
+      "Company ID: " + ownershipFields.company_id + "<br>" +
+      "Created By: " + ownershipFields.created_by_email + "<br>" +
+      "Role: " + ownershipFields.company_user_role + "<br>" +
       "Sector: " + scenario.sector + "<br>" +
       "Execution Actor: " + scenario.actor + "<br>" +
       "Execution Action: " + scenario.action + "<br>" +
@@ -1442,6 +1450,9 @@ async function requestSupervisorOverride(executionId, decision, action, actor, r
   }
 
   try {
+    const workspace = await loadProofWorkspace();
+    const ownershipFields = buildOwnershipFields(workspace);
+
     const eventNote =
       "Supervisor override requested" +
       " | Execution ID: " + executionId +
@@ -1449,12 +1460,16 @@ async function requestSupervisorOverride(executionId, decision, action, actor, r
       " | Action: " + action +
       " | Actor: " + actor +
       " | Risk Level: " + riskLevel +
+      " | Company ID: " + ownershipFields.company_id +
+      " | Requested By: " + ownershipFields.created_by_email +
       " | Request Timestamp: " + new Date().toISOString();
 
     const { error: eventError } = await supabaseClient
       .from("verification_events")
       .insert([{
         proof_id: lastProofId,
+        ...ownershipFields,
+
         event_type: "SUPERVISOR_OVERRIDE_REQUESTED",
         event_note: eventNote
       }]);
@@ -1465,6 +1480,8 @@ async function requestSupervisorOverride(executionId, decision, action, actor, r
       .from("execution_escalations")
       .insert([{
         proof_id: lastProofId,
+        ...ownershipFields,
+
         execution_id: executionId,
         actor_name: actor,
         department: "ShiftGuard Clinical Demo",
@@ -1483,6 +1500,9 @@ async function requestSupervisorOverride(executionId, decision, action, actor, r
       "⚠ SUPERVISOR OVERRIDE REQUEST LOGGED<br>" +
       "Execution ID: " + executionId + "<br>" +
       "Proof ID: " + lastProofId + "<br>" +
+      "Company ID: " + ownershipFields.company_id + "<br>" +
+      "Requested By: " + ownershipFields.created_by_email + "<br>" +
+      "Role: " + ownershipFields.company_user_role + "<br>" +
       "Status: PENDING HUMAN AUTHORITY" +
       "</div><br>";
 
@@ -1543,10 +1563,15 @@ async function submitSupervisorAuthorization(executionId, decision, decisionLabe
   }
 
   try {
+    const workspace = await loadProofWorkspace();
+    const ownershipFields = buildOwnershipFields(workspace);
+
     const { error } = await supabaseClient
       .from("verification_events")
       .insert([{
         proof_id: lastProofId,
+        ...ownershipFields,
+
         event_type: "SHIFTGUARD_SUPERVISOR_AUTHORIZATION_" + decision,
         event_note:
           decisionLabel +
@@ -1557,6 +1582,9 @@ async function submitSupervisorAuthorization(executionId, decision, decisionLabe
           " | Department: " + department +
           " | Reason: " + reason +
           " | Witness: " + witness +
+          " | Company ID: " + ownershipFields.company_id +
+          " | Authorized By: " + ownershipFields.created_by_email +
+          " | Role: " + ownershipFields.company_user_role +
           " | Timestamp: " + timestamp
       }]);
 
@@ -1566,6 +1594,9 @@ async function submitSupervisorAuthorization(executionId, decision, decisionLabe
       "<br><div style='margin-top:18px;padding:18px;border:2px solid " + (decision === "APPROVED" ? "#00ff99" : "#ff4d4d") + ";background:" + (decision === "APPROVED" ? "rgba(0,80,40,0.35)" : "rgba(120,0,0,0.35)") + ";border-radius:12px;text-align:center;font-weight:bold;font-size:20px;color:" + (decision === "APPROVED" ? "#00ff99" : "#ff8080") + ";'>" +
       decisionLabel + "<br>" +
       "Authority Code: " + authorityCode + "<br>" +
+      "Company ID: " + ownershipFields.company_id + "<br>" +
+      "Authorized By: " + ownershipFields.created_by_email + "<br>" +
+      "Role: " + ownershipFields.company_user_role + "<br>" +
       "Supervisor: " + supervisorName + " (" + supervisorId + ")<br>" +
       "Department: " + department + "<br>" +
       "Witness: " + witness + "<br>" +
