@@ -285,6 +285,84 @@ vriWorkspaceGuard();
 
 let lastProofId = "";
 
+  let currentWorkspace = {
+  user: null,
+  profile: null,
+  companyUser: null,
+  company: null,
+  company_id: "VRI_INTERNAL",
+  role: "owner",
+  email: ""
+};
+
+async function loadProofWorkspace() {
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+
+  if (sessionError || !sessionData.session || !sessionData.session.user) {
+    throw new Error("No active workspace session found. Please log in again.");
+  }
+
+  const user = sessionData.session.user;
+
+  const { data: profile } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const { data: companyUser } = await supabaseClient
+    .from("company_users")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("status", "ACTIVE")
+    .limit(1)
+    .maybeSingle();
+
+  const companyId =
+    companyUser?.company_id ||
+    profile?.default_company_id ||
+    "VRI_INTERNAL";
+
+  const { data: company } = await supabaseClient
+    .from("companies")
+    .select("*")
+    .eq("company_id", companyId)
+    .maybeSingle();
+
+  const role =
+    companyUser?.role ||
+    profile?.default_role ||
+    "owner";
+
+  currentWorkspace = {
+    user,
+    profile,
+    companyUser,
+    company,
+    company_id: companyId,
+    role,
+    email: user.email || ""
+  };
+
+  return currentWorkspace;
+}
+
+function buildOwnershipFields(workspace) {
+  return {
+    company_id: workspace.company_id || "VRI_INTERNAL",
+    created_by: workspace.user?.id || null,
+    owner_user_id: workspace.user?.id || null,
+    created_by_email: workspace.email || "",
+    company_user_role: workspace.role || "owner"
+  };
+}
+
+function addOwnershipToEvents(events, ownershipFields) {
+  return events.map(event => ({
+    ...event,
+    ...ownershipFields
+  }));
+}
 function cleanValue(value, fallback = "") {
   if (value === null || value === undefined) return fallback;
   const cleaned = String(value).trim();
@@ -535,8 +613,13 @@ async function createProof() {
 
   try {
     const proofId = "VRI-" + Date.now();
-    const companyId = "VRI_INTERNAL";
+
+    const workspace = await loadProofWorkspace();
+    const ownershipFields = buildOwnershipFields(workspace);
+
+    const companyId = ownershipFields.company_id;
     const source = "internal_portal";
+
     lastProofId = proofId;
 
     const senderName = cleanValue(document.getElementById("senderName").value);
@@ -581,7 +664,8 @@ async function createProof() {
       .from("documents")
       .insert([{
         proof_id: proofId,
-        company_id: companyId,
+        ...ownershipFields,
+
         document_title: documentTitle,
         document_type: "proof_document",
         document_content: documentContent,
@@ -634,7 +718,8 @@ async function createProof() {
       .from("proof_records")
       .insert([{
         proof_id: proofId,
-        company_id: companyId,
+        ...ownershipFields,
+
         event_type: "created",
         source: source,
         industry: "general",
@@ -674,7 +759,7 @@ async function createProof() {
 
     const { error: eventError } = await supabaseClient
       .from("verification_events")
-      .insert([
+      .insert(addOwnershipToEvents([
         {
           proof_id: proofId,
           event_type: "DOCUMENT_CREATED",
@@ -744,7 +829,7 @@ async function createProof() {
           event_type: "RECEIPT_GENERATED",
           event_note: "Proof receipt generated"
         }
-      ]);
+      ], ownershipFields));
 
     if (eventError) throw eventError;
 
@@ -752,7 +837,8 @@ async function createProof() {
       .from("recipients")
       .insert([{
         proof_id: proofId,
-        company_id: companyId,
+        ...ownershipFields,
+
         recipient_name: recipientName,
         recipient_email: recipientEmail,
         recipient_phone: "",
@@ -776,7 +862,8 @@ async function createProof() {
       .from("receipts")
       .insert([{
         proof_id: proofId,
-        company_id: companyId,
+        ...ownershipFields,
+
         receipt_status: "GENERATED",
         receipt_note: "Verified proof receipt generated through VRI Proof Portal"
       }]);
@@ -788,6 +875,8 @@ async function createProof() {
       "<strong>✔ VERIFIED PROOF RECORD CREATED</strong><br><br>" +
       "Proof ID: " + proofId + "<br>" +
       "Company ID: " + companyId + "<br>" +
+      "Created By: " + ownershipFields.created_by_email + "<br>" +
+      "Role: " + ownershipFields.company_user_role + "<br>" +
       "Source: internal_portal<br>" +
       "Status: VERIFIED<br>" +
       "Verification Intent: " + verificationIntent + "<br>" +
