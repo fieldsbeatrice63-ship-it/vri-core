@@ -107,6 +107,32 @@ h1 {
   border: 1px solid var(--red);
   background: rgba(255,60,60,0.08);
 }
+  .account-box {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid rgba(143, 191, 255, 0.35);
+  background: rgba(0, 20, 50, 0.42);
+  border-radius: 12px;
+  color: #b9d6ff;
+  line-height: 1.6;
+  font-size: 13px;
+}
+
+.account-box strong {
+  color: #ffffff;
+}
+
+.account-role {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #00ff99;
+  color: #00ff99;
+  background: rgba(0, 255, 153, 0.08);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
 
 .grid {
   display: grid;
@@ -287,6 +313,10 @@ button:hover,
     <span class="badge badge-green">LIVE SUPABASE DATA</span>
   </div>
 
+  <div id="accountBox" class="account-box">
+  Loading workspace account...
+</div>
+
   <div class="grid stats">
     <div class="card stat">
       <strong id="totalProofs">0</strong>
@@ -405,6 +435,76 @@ async function vriWorkspaceGuard() {
 
 vriWorkspaceGuard();
 
+
+  let currentWorkspace = {
+  user: null,
+  profile: null,
+  companyUser: null,
+  company: null,
+  company_id: "VRI_INTERNAL",
+  role: "owner"
+};
+
+async function loadWorkspaceAccount() {
+  const accountBox = document.getElementById("accountBox");
+
+  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+
+  if (sessionError || !sessionData.session || !sessionData.session.user) {
+    accountBox.innerHTML = "No active workspace session found.";
+    return currentWorkspace;
+  }
+
+  const user = sessionData.session.user;
+
+  const { data: profile } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const { data: companyUser } = await supabaseClient
+    .from("company_users")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("status", "ACTIVE")
+    .limit(1)
+    .maybeSingle();
+
+  const companyId =
+    companyUser?.company_id ||
+    profile?.default_company_id ||
+    "VRI_INTERNAL";
+
+  const { data: company } = await supabaseClient
+    .from("companies")
+    .select("*")
+    .eq("company_id", companyId)
+    .maybeSingle();
+
+  const role =
+    companyUser?.role ||
+    profile?.default_role ||
+    "owner";
+
+  currentWorkspace = {
+    user,
+    profile,
+    companyUser,
+    company,
+    company_id: companyId,
+    role
+  };
+
+  accountBox.innerHTML =
+    "<strong>Logged-In User:</strong> " + (user.email || "N/A") + "<br>" +
+    "<strong>Company:</strong> " + (company?.company_name || "VRI Internal Workspace") + "<br>" +
+    "<strong>Company ID:</strong> " + companyId + "<br>" +
+    "<strong>Role:</strong> <span class='account-role'>" + String(role).toUpperCase() + "</span><br>" +
+    "<strong>Status:</strong> " + (companyUser?.status || profile?.status || "ACTIVE");
+
+  return currentWorkspace;
+}
 function formatDate(value) {
   return value ? new Date(value).toLocaleString() : "N/A";
 }
@@ -467,6 +567,7 @@ async function safeSelect(table, queryBuilder) {
 }
 
 async function loadAdminDashboard() {
+  await loadWorkspaceAccount();
   const proofs = await safeSelect(
     "proof_records",
     supabaseClient
